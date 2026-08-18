@@ -103,12 +103,10 @@ export async function onRequest(context) {
         const rawCode = String(body.code || '').trim();
         if (!code && !rawCode) return errorResponse('กรุณาระบุรหัสประจำตัว 8 หลัก (4 ตัวหน้า + 4 ตัวท้าย)');
 
-        // Look up by student_code, student_id, or formatted 8 digits
         let student = await db.prepare(
           'SELECT * FROM students WHERE student_code = ? OR student_id = ?'
         ).bind(code, rawCode).first().catch(() => null);
 
-        // If not found, try all students to match 4 front + 4 back
         if (!student) {
           const allStudents = await db.prepare('SELECT * FROM students').all().catch(() => ({ results: [] }));
           for (const s of (allStudents.results || [])) {
@@ -141,7 +139,7 @@ export async function onRequest(context) {
       }
 
       // GET /api/students — List all students
-      if (method === 'GET') {
+      if (path.length === 1 && method === 'GET') {
         const result = await db.prepare('SELECT * FROM students ORDER BY student_id ASC').all().catch(() => ({ results: [] }));
         return jsonResponse({
           success: true,
@@ -155,7 +153,7 @@ export async function onRequest(context) {
       }
 
       // POST /api/students — Add or Bulk import students
-      if (method === 'POST') {
+      if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body) return errorResponse('Invalid payload');
 
@@ -169,7 +167,6 @@ export async function onRequest(context) {
           const sName = String(s.fullName || s.full_name || s.name || '').trim();
           if (!sId || !sName) continue;
 
-          // 8-digit code: 4 front + 4 back
           const cleanDigits = sId.replace(/\D/g, '');
           let sCode = s.studentCode || s.student_code || s.code;
           if (!sCode) {
@@ -182,7 +179,6 @@ export async function onRequest(context) {
             VALUES (?, ?, ?, ?)
             ON CONFLICT(student_id) DO UPDATE SET student_code=excluded.student_code, full_name=excluded.full_name
           `).bind(sId, sCode, sName, now).run().catch(async () => {
-            // Fallback insert without conflict syntax for older SQLite
             await db.prepare('DELETE FROM students WHERE student_id = ?').bind(sId).run().catch(() => {});
             await db.prepare('INSERT INTO students (student_id, student_code, full_name, created_at) VALUES (?, ?, ?, ?)').bind(sId, sCode, sName, now).run();
           });
@@ -204,7 +200,49 @@ export async function onRequest(context) {
     // Route: /api/posts
     // -------------------------------------------------------------
     if (path[0] === 'posts') {
-      if (method === 'GET') {
+      // POST /api/posts/:id/like — Toggle Like
+      if (path.length >= 3 && path[2] === 'like' && method === 'POST') {
+        const postId = path[1];
+        const body = await request.json().catch(() => ({}));
+        const userName = body.name || 'คุณครู';
+
+        const existing = await db.prepare(
+          'SELECT 1 FROM post_likes WHERE post_id = ? AND user_name = ?'
+        ).bind(postId, userName).first().catch(() => null);
+
+        if (existing) {
+          await db.prepare('DELETE FROM post_likes WHERE post_id = ? AND user_name = ?').bind(postId, userName).run();
+          return jsonResponse({ success: true, liked: false, userName });
+        } else {
+          await db.prepare('INSERT INTO post_likes (post_id, user_name, created_at) VALUES (?, ?, ?)').bind(
+            postId, userName, new Date().toISOString()
+          ).run();
+          return jsonResponse({ success: true, liked: true, userName });
+        }
+      }
+
+      // POST /api/posts/:id/comment — Add Comment
+      if (path.length >= 3 && path[2] === 'comment' && method === 'POST') {
+        const postId = path[1];
+        const body = await request.json().catch(() => null);
+        if (!body || !body.text || !body.name) return errorResponse('กรุณาระบุชื่อและข้อความคอมเมนต์');
+
+        const id = body.id || ('comm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+        const createdAt = body.createdAt || new Date().toISOString();
+
+        await db.prepare(`
+          INSERT INTO post_comments (id, post_id, name, text, created_at)
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(id, postId, body.name, body.text, createdAt).run();
+
+        return jsonResponse({
+          success: true,
+          comment: { id, name: body.name, text: body.text, createdAt }
+        }, 201);
+      }
+
+      // GET /api/posts — List all posts
+      if (path.length === 1 && method === 'GET') {
         const postsResult = await db.prepare('SELECT * FROM posts ORDER BY created_at DESC').all();
         const posts = postsResult.results || [];
         const likesResult = await db.prepare('SELECT * FROM post_likes').all().catch(() => ({ results: [] }));
@@ -244,7 +282,8 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, posts: enrichedPosts });
       }
 
-      if (method === 'POST') {
+      // POST /api/posts — Create new post
+      if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || !body.title || !body.text) return errorResponse('กรุณากรอกหัวข้อและเนื้อหาโพสต์');
 
@@ -268,52 +307,14 @@ export async function onRequest(context) {
 
         return jsonResponse({ success: true, id, message: 'สร้างโพสต์สำเร็จ' }, 201);
       }
-
-      if (path.length >= 3 && path[2] === 'like' && method === 'POST') {
-        const postId = path[1];
-        const body = await request.json().catch(() => ({}));
-        const userName = body.name || 'คุณครู';
-
-        const existing = await db.prepare(
-          'SELECT 1 FROM post_likes WHERE post_id = ? AND user_name = ?'
-        ).bind(postId, userName).first().catch(() => null);
-
-        if (existing) {
-          await db.prepare('DELETE FROM post_likes WHERE post_id = ? AND user_name = ?').bind(postId, userName).run();
-          return jsonResponse({ success: true, liked: false, userName });
-        } else {
-          await db.prepare('INSERT INTO post_likes (post_id, user_name, created_at) VALUES (?, ?, ?)').bind(
-            postId, userName, new Date().toISOString()
-          ).run();
-          return jsonResponse({ success: true, liked: true, userName });
-        }
-      }
-
-      if (path.length >= 3 && path[2] === 'comment' && method === 'POST') {
-        const postId = path[1];
-        const body = await request.json().catch(() => null);
-        if (!body || !body.text || !body.name) return errorResponse('กรุณาระบุชื่อและข้อความคอมเมนต์');
-
-        const id = body.id || ('comm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
-        const createdAt = body.createdAt || new Date().toISOString();
-
-        await db.prepare(`
-          INSERT INTO post_comments (id, post_id, name, text, created_at)
-          VALUES (?, ?, ?, ?, ?)
-        `).bind(id, postId, body.name, body.text, createdAt).run();
-
-        return jsonResponse({
-          success: true,
-          comment: { id, name: body.name, text: body.text, createdAt }
-        }, 201);
-      }
     }
 
     // -------------------------------------------------------------
     // Route: /api/assignments
     // -------------------------------------------------------------
     if (path[0] === 'assignments') {
-      if (method === 'GET') {
+      // GET /api/assignments — List all assignments
+      if (path.length === 1 && method === 'GET') {
         const assignResult = await db.prepare('SELECT * FROM assignments ORDER BY created_at DESC').all();
         const assignments = assignResult.results || [];
 
@@ -366,7 +367,8 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, assignments: enrichedAssignments });
       }
 
-      if (method === 'POST') {
+      // POST /api/assignments — Create Assignment
+      if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || !body.title) return errorResponse('กรุณาระบุชื่อใบงาน');
 
@@ -410,7 +412,26 @@ export async function onRequest(context) {
     // Route: /api/submissions
     // -------------------------------------------------------------
     if (path[0] === 'submissions') {
-      if (method === 'POST') {
+      // PUT /api/submissions/:id/grade — Grade Submission
+      if (path.length >= 3 && path[2] === 'grade' && method === 'PUT') {
+        const subId = path[1];
+        const body = await request.json().catch(() => ({}));
+        const score = body.score !== undefined ? Number(body.score) : null;
+        const comment = body.comment || '';
+        const status = body.status || (score !== null ? 'graded' : 'pending');
+        const gradedAt = new Date().toISOString();
+
+        await db.prepare(`
+          UPDATE submissions
+          SET score = ?, comment = ?, status = ?, graded_at = ?
+          WHERE id = ?
+        `).bind(score, comment, status, gradedAt, subId).run();
+
+        return jsonResponse({ success: true, message: 'บันทึกคะแนนสำเร็จ' });
+      }
+
+      // POST /api/submissions — Submit work
+      if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || !body.assignmentId || !body.studentName) {
           return errorResponse('กรุณาระบุรหัสใบงานและชื่อนักเรียน');
@@ -462,23 +483,6 @@ export async function onRequest(context) {
 
           return jsonResponse({ success: true, id: subId, message: 'ส่งงานสำเร็จ' }, 201);
         }
-      }
-
-      if (path.length >= 3 && path[2] === 'grade' && method === 'PUT') {
-        const subId = path[1];
-        const body = await request.json().catch(() => ({}));
-        const score = body.score !== undefined ? Number(body.score) : null;
-        const comment = body.comment || '';
-        const status = body.status || (score !== null ? 'graded' : 'pending');
-        const gradedAt = new Date().toISOString();
-
-        await db.prepare(`
-          UPDATE submissions
-          SET score = ?, comment = ?, status = ?, graded_at = ?
-          WHERE id = ?
-        `).bind(score, comment, status, gradedAt, subId).run();
-
-        return jsonResponse({ success: true, message: 'บันทึกคะแนนสำเร็จ' });
       }
     }
 
