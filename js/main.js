@@ -102,16 +102,12 @@ function render(){
 }
 
 /* ---------- Data utils ---------- */
-function loadDemoData(){
-  if(!confirm('โหลดข้อมูลตัวอย่างใหม่? ข้อมูลปัจจุบันจะถูกแทนที่ทั้งหมด')) return;
-  data = defaultData(); seed(); render(); toast('โหลดข้อมูลตัวอย่างแล้ว');
-}
-
 function clearAllData(){
   if(!confirm('ลบข้อมูลทั้งหมด (โพสต์ ใบงาน งานที่ส่ง คะแนน)?')) return;
   data = defaultData();
   localStorage.setItem(KEY, JSON.stringify(data));
-  render(); toast('ล้างข้อมูลแล้ว');
+  render(); 
+  toast('🗑️ ล้างข้อมูลทั้งหมดเรียบร้อย');
 }
 
 /* ---------- Init ---------- */

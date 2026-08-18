@@ -37,3 +37,22 @@
 127.0.0.1 - - [18/Aug/2026 19:42:16] "GET /js/main.js HTTP/1.1" 200 -
 127.0.0.1 - - [18/Aug/2026 19:42:17] code 404, message File not found
 127.0.0.1 - - [18/Aug/2026 19:42:17] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [18/Aug/2026 20:00:41] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:00:41] "GET /js/modals.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:00:42] "GET /js/assignments.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:00:42] "GET /js/state.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:00:42] "GET /css/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /css/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/state.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/feed.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/assignments.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/grading.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/results.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/modals.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /js/main.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Aug/2026 20:07:34] code 404, message File not found
+127.0.0.1 - - [18/Aug/2026 20:07:34] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [18/Aug/2026 20:07:36] code 404, message File not found
+127.0.0.1 - - [18/Aug/2026 20:07:36] "GET /favicon.ico HTTP/1.1" 404 -
