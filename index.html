@@ -247,6 +247,40 @@
   </div>
 </div>
 
+<!-- Modal: Avatar Picker & AI Generator -->
+<div class="overlay" id="avatarPickerModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3>🎨 เลือกรูปโปรไฟล์ / Avatar</h3>
+      <button class="icon-btn" onclick="closeModal('avatarPickerModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="avatar-preview-box">
+        <div class="avatar" id="avatarPreview" style="width:60px; height:60px; font-size:32px"></div>
+        <div>
+          <div style="font-weight:700; font-size:15px">ตัวอย่างรูปโปรไฟล์ของคุณ</div>
+          <div style="font-size:12px; color:var(--muted-fg)">เลือกแบบด้านล่าง หรือกดสุ่มสร้างด้วย AI</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px">
+        <button class="btn btn-soft avatar-tab-btn active" data-tab="ai-bots" onclick="switchAvatarTab('ai-bots')">🤖 หุ่นยนต์ AI</button>
+        <button class="btn btn-soft avatar-tab-btn" data-tab="ai-characters" onclick="switchAvatarTab('ai-characters')">🎨 ตัวละคร AI</button>
+        <button class="btn btn-soft avatar-tab-btn" data-tab="pixel-art" onclick="switchAvatarTab('pixel-art')">👾 พิกเซลอาร์ต</button>
+        <button class="btn btn-soft avatar-tab-btn" data-tab="emojis" onclick="switchAvatarTab('emojis')">✨ อิโมจิ</button>
+        <button class="btn btn-soft avatar-tab-btn" data-tab="ai-random" onclick="switchAvatarTab('ai-random')">🎲 สุ่มสร้าง AI</button>
+        <button class="btn btn-soft avatar-tab-btn" data-tab="upload" onclick="switchAvatarTab('upload')">📷 อัปโหลดรูป</button>
+      </div>
+
+      <div class="avatar-grid" id="avatarGrid"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('avatarPickerModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveSelectedAvatar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกรูปโปรไฟล์</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: image lightbox -->
 <div class="overlay" id="lightboxModal" style="background:rgba(0,0,0,.85); cursor:pointer" onclick="closeModal('lightboxModal')">
   <div style="max-width:90vw; max-height:90vh; text-align:center">
@@ -257,11 +291,12 @@
 
 <div id="toast"></div>
 
-<!-- โหลด JS ตามลำดับ: config → cloudinary → api → utils → state → ฟีเจอร์ → main -->
+<!-- โหลด JS ตามลำดับ: config → cloudinary → api → utils → avatar → state → ฟีเจอร์ → main -->
 <script src="js/config.js" defer></script>
 <script src="js/cloudinary.js" defer></script>
 <script src="js/api.js" defer></script>
 <script src="js/utils.js" defer></script>
+<script src="js/avatar.js" defer></script>
 <script src="js/state.js" defer></script>
 <script src="js/feed.js" defer></script>
 <script src="js/assignments.js" defer></script>

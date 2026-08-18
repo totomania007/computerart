@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — main.js
    จุดเริ่มต้น: header, navigation, การสลับโหมด, Dual-Mode Indicator, init
    โหลดเป็นไฟล์สุดท้ายเสมอ
@@ -24,14 +24,27 @@ function renderHeader(){
     ? '<span class="status-badge cloud" title="เชื่อมต่อ Cloudflare D1 เรียบร้อย" onclick="openApiSettingsModal()">🟢 Cloud</span>'
     : '<span class="status-badge local" title="โหมดออฟไลน์ (LocalStorage)" onclick="openApiSettingsModal()">🟡 Local</span>';
 
-  let studentBadge = '';
-  if (role === 'student' && studentName) {
-    studentBadge = `<span class="chip chip-indigo" style="cursor:pointer; font-weight:700" onclick="switchStudentUser()" title="คลิกเพื่อสลับบัญชีนักศึกษา">👤 ${esc(studentName)} (${esc(studentCode || 'นักศึกษา')}) 🔄</span>`;
+  let userBadge = '';
+  if (role === 'student') {
+    if (studentName) {
+      const stuAvatar = getSavedAvatar(studentName, false);
+      const stuAvatarHtml = stuAvatar && stuAvatar.startsWith('http')
+        ? `<img src="${esc(stuAvatar)}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px">`
+        : (stuAvatar || '👤') + ' ';
+      userBadge = `<span class="chip chip-indigo" style="cursor:pointer; font-weight:700" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar">${stuAvatarHtml}${esc(studentName)} (${esc(studentCode || 'นศ.')})</span>` +
+        `<button class="btn btn-ghost" style="padding:4px 8px; font-size:12px" onclick="switchStudentUser()" title="สลับบัญชีนักศึกษา">🔄 สลับ</button>`;
+    }
+  } else if (role === 'teacher') {
+    const teachAvatar = getSavedAvatar(TEACHER, true);
+    const teachAvatarHtml = teachAvatar && teachAvatar.startsWith('http')
+      ? `<img src="${esc(teachAvatar)}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px">`
+      : teachAvatar + ' ';
+    userBadge = `<button class="btn btn-soft" style="padding:4px 10px; font-size:13px; font-weight:700" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar ครู">${teachAvatarHtml}เปลี่ยน Avatar</button>`;
   }
 
   rs.innerHTML =
     modeBadge +
-    studentBadge +
+    userBadge +
     '<button class="'+(role==='teacher'?'active':'')+'" onclick="switchRole(\'teacher\')">👩‍🏫 ครู</button>'+
     '<button class="'+(role==='student'?'active':'')+'" onclick="switchRole(\'student\')">🧑‍🎓 นักเรียน</button>';
 

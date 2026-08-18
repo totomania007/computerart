@@ -195,8 +195,28 @@ const POST_META = {
 };
 const AVATAR_CLASSES = ['','alt1','alt2','alt3'];
 
-function avatarOf(name, seedIdx){
+function getSavedAvatar(name, isTeacher) {
+  if (isTeacher || name === TEACHER || (role === 'teacher' && !name)) {
+    return localStorage.getItem('cwh_teacher_avatar') || '👩‍🏫';
+  }
+  if (name) {
+    return localStorage.getItem('cwh_avatar_' + name) || (name === studentName ? localStorage.getItem('cwh_student_avatar') : null) || '';
+  }
+  return localStorage.getItem('cwh_student_avatar') || '';
+}
+
+function avatarOf(name, seedIdx, customAvatar){
   const cls = AVATAR_CLASSES[(seedIdx||0) % AVATAR_CLASSES.length];
+  const isTeacher = name === TEACHER || (role === 'teacher' && !name);
+  const avatar = customAvatar || getSavedAvatar(name, isTeacher);
+
+  if (avatar) {
+    if (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image')) {
+      return `<div class="avatar ${cls} clickable" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar"><img src="${esc(avatar)}" alt="avatar"></div>`;
+    }
+    return `<div class="avatar ${cls} clickable" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar" style="font-size:22px">${esc(avatar)}</div>`;
+  }
+
   const ch = (name || '?').trim().charAt(0).toUpperCase();
-  return '<div class="avatar '+cls+'">'+esc(ch)+'</div>';
+  return `<div class="avatar ${cls} clickable" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar">${esc(ch)}</div>`;
 }
