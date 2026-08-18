@@ -25,6 +25,19 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
+async function ensureTables(db) {
+  try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS students (
+        student_id TEXT PRIMARY KEY,
+        student_code TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `).run();
+  } catch (_) {}
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -49,6 +62,7 @@ export async function onRequest(context) {
         message: 'Pages Function is online! D1 database binding "DB" can be configured in Cloudflare Pages Settings -> Functions.'
       });
     }
+    await ensureTables(db);
     const dbTest = await db.prepare('SELECT count(*) as count FROM posts').first().catch(() => null);
     const stuTest = await db.prepare('SELECT count(*) as count FROM students').first().catch(() => null);
     return jsonResponse({
@@ -64,6 +78,8 @@ export async function onRequest(context) {
   if (!db) {
     return errorResponse('Cloudflare D1 database is not bound as "DB". Please check Pages Settings -> Functions -> D1 Database Bindings.', 500);
   }
+
+  await ensureTables(db);
 
   try {
     // -------------------------------------------------------------
@@ -90,11 +106,11 @@ export async function onRequest(context) {
         // Look up by student_code, student_id, or formatted 8 digits
         let student = await db.prepare(
           'SELECT * FROM students WHERE student_code = ? OR student_id = ?'
-        ).bind(code, rawCode).first();
+        ).bind(code, rawCode).first().catch(() => null);
 
         // If not found, try all students to match 4 front + 4 back
         if (!student) {
-          const allStudents = await db.prepare('SELECT * FROM students').all();
+          const allStudents = await db.prepare('SELECT * FROM students').all().catch(() => ({ results: [] }));
           for (const s of (allStudents.results || [])) {
             const cleanId = String(s.student_id).replace(/\D/g, '');
             const generated8 = cleanId.length >= 8 ? (cleanId.slice(0, 4) + cleanId.slice(-4)) : cleanId;
@@ -126,7 +142,7 @@ export async function onRequest(context) {
 
       // GET /api/students — List all students
       if (method === 'GET') {
-        const result = await db.prepare('SELECT * FROM students ORDER BY student_id ASC').all();
+        const result = await db.prepare('SELECT * FROM students ORDER BY student_id ASC').all().catch(() => ({ results: [] }));
         return jsonResponse({
           success: true,
           students: (result.results || []).map(s => ({
@@ -165,7 +181,11 @@ export async function onRequest(context) {
             INSERT INTO students (student_id, student_code, full_name, created_at)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(student_id) DO UPDATE SET student_code=excluded.student_code, full_name=excluded.full_name
-          `).bind(sId, sCode, sName, now).run();
+          `).bind(sId, sCode, sName, now).run().catch(async () => {
+            // Fallback insert without conflict syntax for older SQLite
+            await db.prepare('DELETE FROM students WHERE student_id = ?').bind(sId).run().catch(() => {});
+            await db.prepare('INSERT INTO students (student_id, student_code, full_name, created_at) VALUES (?, ?, ?, ?)').bind(sId, sCode, sName, now).run();
+          });
           addedCount++;
         }
 
@@ -187,8 +207,8 @@ export async function onRequest(context) {
       if (method === 'GET') {
         const postsResult = await db.prepare('SELECT * FROM posts ORDER BY created_at DESC').all();
         const posts = postsResult.results || [];
-        const likesResult = await db.prepare('SELECT * FROM post_likes').all();
-        const commentsResult = await db.prepare('SELECT * FROM post_comments ORDER BY created_at ASC').all();
+        const likesResult = await db.prepare('SELECT * FROM post_likes').all().catch(() => ({ results: [] }));
+        const commentsResult = await db.prepare('SELECT * FROM post_comments ORDER BY created_at ASC').all().catch(() => ({ results: [] }));
 
         const likesByPost = {};
         for (const l of (likesResult.results || [])) {
@@ -256,7 +276,7 @@ export async function onRequest(context) {
 
         const existing = await db.prepare(
           'SELECT 1 FROM post_likes WHERE post_id = ? AND user_name = ?'
-        ).bind(postId, userName).first();
+        ).bind(postId, userName).first().catch(() => null);
 
         if (existing) {
           await db.prepare('DELETE FROM post_likes WHERE post_id = ? AND user_name = ?').bind(postId, userName).run();
@@ -297,8 +317,8 @@ export async function onRequest(context) {
         const assignResult = await db.prepare('SELECT * FROM assignments ORDER BY created_at DESC').all();
         const assignments = assignResult.results || [];
 
-        const examplesResult = await db.prepare('SELECT * FROM assignment_examples').all();
-        const subsResult = await db.prepare('SELECT * FROM submissions ORDER BY submitted_at DESC').all();
+        const examplesResult = await db.prepare('SELECT * FROM assignment_examples').all().catch(() => ({ results: [] }));
+        const subsResult = await db.prepare('SELECT * FROM submissions ORDER BY submitted_at DESC').all().catch(() => ({ results: [] }));
 
         const examplesByAssign = {};
         for (const ex of (examplesResult.results || [])) {
@@ -403,7 +423,7 @@ export async function onRequest(context) {
 
         const existing = await db.prepare(
           'SELECT id FROM submissions WHERE assignment_id = ? AND (student_name = ? OR (student_id != "" AND student_id = ?))'
-        ).bind(body.assignmentId, body.studentName, studentId).first();
+        ).bind(body.assignmentId, body.studentName, studentId).first().catch(() => null);
 
         if (existing) {
           await db.prepare(`
