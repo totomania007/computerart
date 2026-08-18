@@ -1,0 +1,168 @@
+﻿/* ============================================================
+   Classwork Hub — utils.js
+   ตัวช่วยทั่วไป + ไอคอน SVG + ระบบยืนยันรหัสครู (PIN)
+   ============================================================ */
+'use strict';
+
+const TEACHER = 'คุณครู';
+const MAX_FILE = 50 * 1024 * 1024; // Cloudinary รองรับได้ถึง 50MB
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowISO = () => new Date().toISOString();
+
+function fmtDate(iso){
+  if(!iso) return '';
+  try{ return new Intl.DateTimeFormat('th-TH',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(iso)); }
+  catch(e){ return new Date(iso).toLocaleString(); }
+}
+function fmtDateShort(iso){
+  if(!iso) return '';
+  try{ return new Intl.DateTimeFormat('th-TH',{day:'numeric',month:'short',year:'numeric'}).format(new Date(iso)); }
+  catch(e){ return new Date(iso).toLocaleDateString(); }
+}
+
+/* ---------- Toast & Modal ---------- */
+function toast(msg){
+  const el = document.getElementById('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 2800);
+}
+function closeModal(id){ 
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show'); 
+}
+function openModal(id){ 
+  const el = document.getElementById(id);
+  if (el) el.classList.add('show'); 
+}
+
+/* ---------- Teacher PIN Verification ---------- */
+function verifyTeacherPin(callback) {
+  // If already verified in this session
+  if (sessionStorage.getItem('cwh_teacher_auth') === 'true') {
+    if (callback) callback(true);
+    return true;
+  }
+  
+  // Show PIN prompt modal or standard dialog
+  openModal('pinModal');
+  const input = document.getElementById('pinInput');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  window._pendingPinCallback = callback;
+  return false;
+}
+
+function submitTeacherPin() {
+  const input = document.getElementById('pinInput');
+  const entered = (input ? input.value : '').trim();
+  if (entered === APP_CONFIG.teacherPin) {
+    sessionStorage.setItem('cwh_teacher_auth', 'true');
+    closeModal('pinModal');
+    toast('🔓 ยืนยันรหัสผ่านครูถูกต้อง เข้าสู่โหมดครู');
+    if (window._pendingPinCallback) {
+      window._pendingPinCallback(true);
+      window._pendingPinCallback = null;
+    }
+    return true;
+  } else {
+    toast('❌ รหัสผ่านครูไม่ถูกต้อง (กรุณาลองใหม่อีกครั้ง)');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    return false;
+  }
+}
+
+/* ---------- Identity ---------- */
+function currentIdentity(){ return role === 'teacher' ? TEACHER : (studentName || ''); }
+
+function ensureStudentName(){
+  if(role === 'teacher') return true;
+  if(studentName) return true;
+  const name = prompt('กรุณาใส่ชื่อ-นามสกุลของคุณ (ใช้ในการส่งงาน):');
+  if(!name || !name.trim()) return false;
+  studentName = name.trim();
+  localStorage.setItem(STUDENT_KEY, studentName);
+  render();
+  return true;
+}
+
+/* ---------- Files & Lightbox ---------- */
+function openFile(dataUrl, name){
+  if(!dataUrl) return;
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = name || 'file'; a.target = '_blank';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function openLightbox(dataUrl, name){
+  if(!dataUrl) return;
+  document.getElementById('lightboxImg').src = dataUrl;
+  document.getElementById('lightboxName').textContent = name || '';
+  openModal('lightboxModal');
+}
+
+function ytEmbed(url){
+  const m = String(url||'').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+  return m ? 'https://www.youtube.com/embed/' + m[1] : null;
+}
+
+/* ---------- รูปภาพตัวอย่าง (SVG Placeholder) ---------- */
+function svgPic(text, a, b){
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420">'
+    + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+    + '<stop offset="0" stop-color="'+a+'"/><stop offset="1" stop-color="'+b+'"/>'
+    + '</linearGradient></defs>'
+    + '<rect width="800" height="420" fill="url(#g)"/>'
+    + '<circle cx="660" cy="90" r="70" fill="rgba(255,255,255,.15)"/>'
+    + '<circle cx="120" cy="360" r="50" fill="rgba(255,255,255,.12)"/>'
+    + '<text x="400" y="225" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#fff" text-anchor="middle">'+text+'</text>'
+    + '</svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+/* ---------- ไอคอน SVG (Lucide style) ---------- */
+const ICONS = {
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>',
+  heartFill: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>',
+  comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  clipboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 12 2 2 4-4"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>',
+  cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+};
+
+/* ---------- Metadata สำหรับโพสต์แต่ละประเภท ---------- */
+const POST_META = {
+  example:   { label:'ตัวอย่างงาน',        cls:'chip-indigo' },
+  video:     { label:'วิดีโอ / ตัวอย่างการสร้างงาน', cls:'chip-rose' },
+  tutorial:  { label:'ขั้นตอนการทำ',       cls:'chip-green' },
+  inspiration:{ label:'แรงบันดาลใจ',       cls:'chip-amber' },
+  announcement:{ label:'ประกาศ',           cls:'chip-gray' }
+};
+const AVATAR_CLASSES = ['','alt1','alt2','alt3'];
+
+function avatarOf(name, seedIdx){
+  const cls = AVATAR_CLASSES[(seedIdx||0) % AVATAR_CLASSES.length];
+  const ch = (name || '?').trim().charAt(0).toUpperCase();
+  return '<div class="avatar '+cls+'">'+esc(ch)+'</div>';
+}

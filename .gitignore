@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Cloudflare Wrangler
+.wrangler/
+.mf/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Scratch and Temp
+scratch/
+tmp/

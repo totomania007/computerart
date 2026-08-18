@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classwork Hub — ใบงานออนไลน์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="header-in">
+    <div class="logo" onclick="showScreen('feed')">
+      <div class="logo-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      </div>
+      <div><h1>Classwork Hub</h1><small>ใบงาน • ส่งงาน • ตรวจงาน</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="role-switch" id="roleSwitch"></div>
+  </div>
+</header>
+
+<main>
+  <!-- Feed -->
+  <section class="screen" id="screen-feed">
+    <div class="page-title">ฟีดห้องเรียน</div>
+    <div class="page-sub">ประกาศ ตัวอย่างงาน วิดีโอสอน และแรงบันดาลใจ</div>
+    <div class="feed-wrap" id="feed"></div>
+  </section>
+
+  <!-- Assignments -->
+  <section class="screen" id="screen-assignments">
+    <div class="page-title">ใบงาน / งานที่มอบหมาย</div>
+    <div class="page-sub">ดูรายละเอียดงานและส่งผลงาน</div>
+    <div id="assignList"></div>
+  </section>
+
+  <!-- Student results -->
+  <section class="screen" id="screen-results">
+    <div class="page-title">ผลงานของฉัน</div>
+    <div class="page-sub">ตรวจสอบคะแนนและคำติชมจากคุณครู</div>
+    <div id="resultsStats"></div>
+    <div id="resultsList"></div>
+  </section>
+
+  <!-- Grading (teacher) -->
+  <section class="screen" id="screen-grading">
+    <div class="page-title">ตรวจงาน</div>
+    <div class="page-sub">เลือกใบงานเพื่อดูงานที่นักเรียนส่งและให้คะแนน</div>
+    <div id="gradingSelect"></div>
+    <div id="gradingArea" style="margin-top:16px"></div>
+  </section>
+</main>
+
+<footer>
+  <button class="btn btn-soft" onclick="openApiSettingsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>ตั้งค่า Cloudflare D1</button>
+  <button class="btn btn-soft" onclick="loadDemoData()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>โหลดข้อมูลตัวอย่าง</button>
+  <button class="btn btn-danger" onclick="clearAllData()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>ล้างข้อมูลทั้งหมด</button>
+  <div class="footer-note" style="flex-basis:100%">ระบบจัดเก็บสื่อบน Cloudinary • ฐานข้อมูล Cloudflare D1 / LocalStorage Dual-mode • สร้างด้วย UI UX Pro Max skill</div>
+</footer>
+
+<!-- Modal: Teacher PIN Verification -->
+<div class="overlay" id="pinModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <h3>🔒 ยืนยันรหัสผ่านครู</h3>
+      <button class="icon-btn" onclick="closeModal('pinModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px; margin-bottom:14px; color:var(--muted-fg)">กรุณาใส่รหัสผ่านครู 4 หลักเพื่อเข้าสู่ระบบจัดการและตรวจงาน</p>
+      <div class="field">
+        <label>รหัส PIN (ค่าเริ่มต้น: 1234)</label>
+        <input type="password" maxlength="8" class="input pin-display" id="pinInput" placeholder="••••" onkeydown="if(event.key==='Enter')submitTeacherPin()">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('pinModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitTeacherPin()">เข้าสู่โหมดครู</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cloudflare API Settings -->
+<div class="overlay" id="apiSettingsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>☁️ ตั้งค่า Cloudflare D1 API</h3>
+      <button class="icon-btn" onclick="closeModal('apiSettingsModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="apiStatusText" style="margin-bottom:14px; font-size:14px; font-weight:600; padding:10px 14px; border:2px solid #000; border-radius:2px; background:var(--muted)"></div>
+      <div class="field">
+        <label>Cloudflare API URL (เว้นว่างไว้เพื่อใช้ Same-Origin / LocalStorage)</label>
+        <input class="input" id="apiUrlInput" placeholder="https://classwork-hub.pages.dev/api">
+        <div class="hint">เมื่อ Deploy ขึ้น Cloudflare Pages ระบบจะใช้ <code>/api</code> อัตโนมัติ</div>
+      </div>
+      <div style="font-size:13px; line-height:1.6; background:#FEF3C7; border:2px solid #000; padding:10px 12px; margin-top:10px">
+        <b>💡 ข้อมูลการเชื่อมต่อ Cloudinary:</b><br>
+        Cloud Name: <code>ogdfbbpw</code> • Upload Preset: <code>computer_art</code> (เชื่อมต่อพร้อมใช้งาน)
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('apiSettingsModal')">ปิด</button>
+      <button class="btn btn-primary" onclick="saveApiSettings()">บันทึกและเชื่อมต่อ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: compose post -->
+<div class="overlay" id="postModal">
+  <div class="modal">
+    <div class="modal-head"><h3>สร้างโพสต์</h3><button class="icon-btn" onclick="closeModal('postModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body">
+      <div class="field"><label>ประเภทโพสต์</label>
+        <select class="select" id="postType">
+          <option value="example">ตัวอย่างงาน</option>
+          <option value="video">วิดีโอ / ตัวอย่างการสร้างงาน</option>
+          <option value="tutorial">ขั้นตอนการทำ (How-to)</option>
+          <option value="inspiration">แรงบันดาลใจ</option>
+          <option value="announcement">ประกาศ</option>
+        </select>
+      </div>
+      <div class="field"><label>หัวข้อ</label><input class="input" id="postTitle" placeholder="เช่น แรงบันดาลใจ: โปสเตอร์สีสัน"></div>
+      <div class="field"><label>เนื้อหา</label><textarea class="textarea" id="postText" placeholder="เขียนรายละเอียด..."></textarea></div>
+      <div class="field"><label>รูปภาพ (อัปโหลดขึ้น Cloudinary)</label>
+        <div class="file-drop" id="postImgDrop" onclick="document.getElementById('postImg').click()">
+          <span id="postImgLabel">คลิกเพื่อเลือกรูปภาพ</span>
+        </div>
+        <input type="file" id="postImg" accept="image/*" style="display:none" onchange="onPickFile(this,'postImgLabel')">
+      </div>
+      <div class="field"><label>ลิงก์วิดีโอ YouTube (ไม่บังคับ)</label>
+        <input class="input" id="postVideoUrl" placeholder="https://www.youtube.com/watch?v=...">
+      </div>
+      <div class="field"><label>หรืออัปโหลดไฟล์วิดีโอ (อัปโหลดขึ้น Cloudinary)</label>
+        <div class="file-drop" id="postVideoDrop" onclick="document.getElementById('postVideoFile').click()">
+          <span id="postVideoLabel">คลิกเพื่อเลือกไฟล์วิดีโอ</span>
+        </div>
+        <input type="file" id="postVideoFile" accept="video/*" style="display:none" onchange="onPickFile(this,'postVideoLabel')">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('postModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="savePost()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>โพสต์</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: compose assignment -->
+<div class="overlay" id="assignModal">
+  <div class="modal">
+    <div class="modal-head"><h3>สร้างใบงาน / งานใหม่</h3><button class="icon-btn" onclick="closeModal('assignModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body">
+      <div class="field"><label>ชื่อใบงาน / งาน *</label><input class="input" id="asTitle" placeholder="เช่น ออกแบบโปสเตอร์แนะนำตัวเอง"></div>
+      <div class="row">
+        <div class="field"><label>วิชา</label><input class="input" id="asSubject" placeholder="เช่น คอมพิวเตอร์กราฟิก"></div>
+        <div class="field"><label>คะแนนเต็ม</label><input class="input" id="asScore" type="number" min="1" max="100" value="10"></div>
+      </div>
+      <div class="field"><label>กำหนดส่ง</label><input class="input" id="asDue" type="datetime-local"></div>
+      <div class="field"><label>รายละเอียดงาน</label><textarea class="textarea" id="asDesc" placeholder="อธิบายงานโดยรวม..."></textarea></div>
+      <div class="field"><label>ขั้นตอน / ข้อกำหนดในการทำ</label><textarea class="textarea" id="asInstr" placeholder="1) ...&#10;2) ..."></textarea></div>
+      <div class="field"><label>ไฟล์แนบ (ใบงาน/เอกสาร, ไม่บังคับ)</label>
+        <div class="file-drop" id="asFileDrop" onclick="document.getElementById('asFile').click()">
+          <span id="asFileLabel">คลิกเพื่อแนบไฟล์ (PDF, รูปภาพ, เอกสาร)</span>
+        </div>
+        <input type="file" id="asFile" style="display:none" onchange="onPickFile(this,'asFileLabel')">
+      </div>
+      <div class="field"><label>ภาพตัวอย่างงาน (สูงสุด 5 รูป, ไม่บังคับ)</label>
+        <div class="file-drop" id="asExImgsDrop" onclick="document.getElementById('asExImgs').click()">
+          <span id="asExImgsLabel">คลิกเพื่อเลือกรูปภาพตัวอย่าง</span>
+        </div>
+        <input type="file" id="asExImgs" accept="image/*" multiple style="display:none" onchange="onPickMultipleFiles(this,'asExImgsLabel',5)">
+        <div class="hint">รองรับ JPG, PNG, GIF — อัปโหลดเก็บที่ Cloudinary อัตโนมัติ</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('assignModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveAssignment()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>สร้างใบงาน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: assignment detail -->
+<div class="overlay" id="detailModal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head"><h3 id="detTitle">รายละเอียดงาน</h3><button class="icon-btn" onclick="closeModal('detailModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body" id="detBody"></div>
+  </div>
+</div>
+
+<!-- Modal: submit work -->
+<div class="overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="subTitle">ส่งงาน</h3><button class="icon-btn" onclick="closeModal('submitModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body" id="subBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('submitModal')">ยกเลิก</button>
+      <button class="btn btn-success" onclick="submitWork()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>ส่งงาน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: image lightbox -->
+<div class="overlay" id="lightboxModal" style="background:rgba(0,0,0,.85); cursor:pointer" onclick="closeModal('lightboxModal')">
+  <div style="max-width:90vw; max-height:90vh; text-align:center">
+    <img id="lightboxImg" src="" style="max-width:100%; max-height:85vh; border:4px solid #fff; box-shadow:4px 4px 0 #000">
+    <div id="lightboxName" style="color:#fff; margin-top:10px; font-size:13px; font-weight:700"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- โหลด JS ตามลำดับ: config → cloudinary → api → utils → state → ฟีเจอร์ → main -->
+<script src="js/config.js" defer></script>
+<script src="js/cloudinary.js" defer></script>
+<script src="js/api.js" defer></script>
+<script src="js/utils.js" defer></script>
+<script src="js/state.js" defer></script>
+<script src="js/feed.js" defer></script>
+<script src="js/assignments.js" defer></script>
+<script src="js/grading.js" defer></script>
+<script src="js/results.js" defer></script>
+<script src="js/modals.js" defer></script>
+<script src="js/main.js" defer></script>
+</body>
+</html>

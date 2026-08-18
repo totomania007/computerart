@@ -1,0 +1,9 @@
+﻿name = "classwork-hub-api"
+main = "../functions/api/[[catchall]].js"
+compatibility_date = "2024-01-01"
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "classwork-hub-db"
+database_id = "your-d1-database-id-here"
