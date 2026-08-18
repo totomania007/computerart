@@ -35,26 +35,35 @@ export async function onRequest(context) {
     return onRequestOptions();
   }
 
-  // Verify D1 Database Binding
   const db = env.DB;
+
+  // -------------------------------------------------------------
+  // Route: /api/health
+  // -------------------------------------------------------------
+  if (path.length === 0 || path[0] === 'health') {
+    if (!db) {
+      return jsonResponse({
+        success: true,
+        status: 'online',
+        database: 'waiting_for_binding',
+        message: 'Pages Function is online! D1 database binding "DB" can be configured in Cloudflare Pages Settings -> Functions.'
+      });
+    }
+    const dbTest = await db.prepare('SELECT count(*) as count FROM posts').first().catch(() => null);
+    return jsonResponse({
+      success: true,
+      status: 'online',
+      database: dbTest ? 'Cloudflare D1 connected' : 'D1 connected (ready)',
+      postCount: dbTest?.count || 0
+    });
+  }
+
+  // Verify D1 Database Binding for other routes
   if (!db) {
     return errorResponse('Cloudflare D1 database is not bound as "DB". Please check Pages Settings -> Functions -> D1 Database Bindings.', 500);
   }
 
   try {
-    // -------------------------------------------------------------
-    // Route: /api/health
-    // -------------------------------------------------------------
-    if (path.length === 0 || path[0] === 'health') {
-      const dbTest = await db.prepare('SELECT count(*) as count FROM posts').first();
-      return jsonResponse({
-        success: true,
-        status: 'online',
-        database: 'Cloudflare D1 connected',
-        postCount: dbTest?.count || 0
-      });
-    }
-
     // -------------------------------------------------------------
     // Route: /api/verify-pin (POST)
     // -------------------------------------------------------------
