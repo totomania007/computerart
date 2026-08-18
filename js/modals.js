@@ -1,6 +1,6 @@
 ﻿/* ============================================================
    Classwork Hub — modals.js
-   ฟอร์มสร้างโพสต์ + ฟอร์มสร้างใบงาน (อัปโหลด Cloudinary + API Sync)
+   ฟอร์มสร้างโพสต์ + ฟอร์มสร้างใบงาน + จัดการรายชื่อนักศึกษา (D1 Sync)
    ============================================================ */
 'use strict';
 
@@ -163,4 +163,105 @@ async function saveAssignment(){
     console.error(err);
     toast('❌ เกิดข้อผิดพลาดในการสร้างใบงาน');
   }
+}
+
+/* ---------- จัดการรายชื่อนักศึกษา (สำหรับครู) ---------- */
+async function openStudentManagerModal(){
+  openModal('studentManagerModal');
+  await renderStudentManagerList();
+}
+
+async function renderStudentManagerList(){
+  const listEl = document.getElementById('studentManagerList');
+  if(!listEl) return;
+  listEl.innerHTML = '<p style="font-size:13px; color:var(--muted-fg)">⏳ กำลังโหลดรายชื่อนักศึกษา...</p>';
+
+  const students = await API.getStudents();
+  if(!students.length){
+    listEl.innerHTML = '<div style="padding:16px; text-align:center; background:var(--muted); border:2px solid #000; border-radius:2px; font-size:13px">ยังไม่มีรายชื่อนักศึกษาในระบบ</div>';
+    return;
+  }
+
+  let html = `<div style="max-height:220px; overflow-y:auto; border:2px solid #000; border-radius:2px; background:#fff">
+    <table style="width:100%; border-collapse:collapse; font-size:13px">
+      <thead>
+        <tr style="background:var(--muted); border-bottom:2px solid #000; text-align:left">
+          <th style="padding:8px">รหัส นศ.</th>
+          <th style="padding:8px">4 ตัวท้าย</th>
+          <th style="padding:8px">ชื่อ-นามสกุล</th>
+          <th style="padding:8px; text-align:right">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  students.forEach((s) => {
+    html += `<tr style="border-bottom:1px solid #ddd">
+      <td style="padding:8px; font-weight:bold">${esc(s.studentId)}</td>
+      <td style="padding:8px"><span class="chip chip-indigo" style="font-size:11px">${esc(s.studentCode)}</span></td>
+      <td style="padding:8px">${esc(s.fullName)}</td>
+      <td style="padding:8px; text-align:right">
+        <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px; color:#B91C1C" onclick="deleteStudentItem('${esc(s.studentId)}')">ลบ</button>
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  listEl.innerHTML = html;
+}
+
+async function importStudentList(){
+  const textarea = document.getElementById('studentBatchInput');
+  const text = (textarea ? textarea.value : '').trim();
+  if(!text){
+    toast('กรุณากรอกหรือวางรายชื่อนักศึกษา');
+    return;
+  }
+
+  // Parse lines: e.g. "65012345 นายสมชาย ใจดี" or "65012345, สมชาย ใจดี"
+  const lines = text.split('\n');
+  const parsed = [];
+
+  for(const line of lines){
+    const clean = line.trim();
+    if(!clean) continue;
+    // Try comma, tab, or space separation
+    let parts = clean.split(/[,\t]+/);
+    if(parts.length < 2){
+      // Try first word as ID, rest as name
+      const m = clean.match(/^(\S+)\s+(.+)$/);
+      if(m){
+        parts = [m[1], m[2]];
+      }
+    }
+    if(parts.length >= 2){
+      const sId = parts[0].trim();
+      const sName = parts.slice(1).join(' ').trim();
+      const sCode = sId.length >= 4 ? sId.slice(-4) : sId;
+      if(sId && sName){
+        parsed.push({ studentId: sId, studentCode: sCode, fullName: sName });
+      }
+    }
+  }
+
+  if(!parsed.length){
+    toast('⚠️ ไม่สามารถแปลงข้อมูลได้ กรุณาใส่ในรูปแบบ: รหัสนักศึกษา ชื่อ-นามสกุล (1 คนต่อบรรทัด)');
+    return;
+  }
+
+  toast(`⏳ กำลังนำเข้า ${parsed.length} รายชื่อสู่ระบบ...`);
+  const ok = await API.saveStudents(parsed);
+  if(ok){
+    if(textarea) textarea.value = '';
+    toast(`✅ นำเข้ารายชื่อนักศึกษา ${parsed.length} คนสำเร็จ!`);
+    await renderStudentManagerList();
+  } else {
+    toast('❌ บันทึกรายชื่อไม่สำเร็จ');
+  }
+}
+
+async function deleteStudentItem(sId){
+  if(!confirm(`ลบนักศึกษารหัส ${sId} ออกจากระบบ?`)) return;
+  await API.deleteStudent(sId);
+  toast(`ลบนักศึกษารหัส ${sId} เรียบร้อย`);
+  await renderStudentManagerList();
 }

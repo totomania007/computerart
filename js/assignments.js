@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — assignments.js
    รายการใบงาน + หน้าดูรายละเอียด + ฟอร์มส่งงาน (Cloudinary + API)
    ============================================================ */
@@ -161,6 +161,7 @@ async function submitWork(){
       id: editingSubId || uid(),
       assignmentId: a.id,
       studentName: name,
+      studentId: studentId || '',
       text,
       link,
       file: fileObj

@@ -27,6 +27,82 @@ const API = {
   },
 
   // -------------------------------------------------------------
+  // Students Management & Verification
+  // -------------------------------------------------------------
+  async verifyStudent(code) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/students/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const json = await res.json();
+        return json;
+      } catch (e) {
+        console.warn('Verify fallback to local:', e);
+      }
+    }
+    // Local fallback search
+    const students = JSON.parse(localStorage.getItem('cwh_students_v1') || '[]');
+    const cleanCode = String(code || '').trim();
+    const found = students.find(s => s.studentCode === cleanCode || s.studentId === cleanCode || (s.studentId && s.studentId.endsWith(cleanCode)));
+    if (found) {
+      return { success: true, valid: true, student: found };
+    }
+    return { success: false, valid: false, error: 'ไม่พบรหัสนักศึกษาในระบบ' };
+  },
+
+  async getStudents() {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/students`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.students)) {
+          return json.students;
+        }
+      } catch (e) {
+        console.warn('Fallback to local students:', e);
+      }
+    }
+    return JSON.parse(localStorage.getItem('cwh_students_v1') || '[]');
+  },
+
+  async saveStudents(studentsList) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/students`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ students: studentsList })
+        });
+        const json = await res.json();
+        if (json.success) return true;
+      } catch (e) {
+        console.warn('Save students fallback to local:', e);
+      }
+    }
+    // Local fallback
+    localStorage.setItem('cwh_students_v1', JSON.stringify(studentsList));
+    return true;
+  },
+
+  async deleteStudent(studentId) {
+    if (this.isCloudConnected) {
+      try {
+        await fetch(`${APP_CONFIG.getApiUrl()}/students/${studentId}`, { method: 'DELETE' });
+        return true;
+      } catch (e) {
+        console.warn('Delete student fallback to local:', e);
+      }
+    }
+    const students = JSON.parse(localStorage.getItem('cwh_students_v1') || '[]');
+    const filtered = students.filter(s => s.studentId !== studentId);
+    localStorage.setItem('cwh_students_v1', JSON.stringify(filtered));
+    return true;
+  },
+
+  // -------------------------------------------------------------
   // Posts & Feed
   // -------------------------------------------------------------
   async getPosts() {
@@ -61,7 +137,6 @@ const API = {
         toast('⚠️ ไม่สามารถบันทึกไปยัง Cloud ได้ บันทึกลงเครื่องแทน');
       }
     }
-    // Local fallback
     data.posts.unshift(postData);
     save();
     return true;
@@ -84,7 +159,6 @@ const API = {
         console.warn('Like fallback to local:', e);
       }
     }
-    // Local fallback
     const p = data.posts.find(x => x.id === postId);
     if (!p) return false;
     if (!Array.isArray(p.likes)) p.likes = [];
@@ -117,7 +191,6 @@ const API = {
         console.warn('Comment fallback to local:', e);
       }
     }
-    // Local fallback
     const p = data.posts.find(x => x.id === postId);
     if (!p) return false;
     if (!Array.isArray(p.comments)) p.comments = [];
@@ -161,7 +234,6 @@ const API = {
         toast('⚠️ ไม่สามารถบันทึกไปยัง Cloud ได้ บันทึกลงเครื่องแทน');
       }
     }
-    // Local fallback
     data.assignments.unshift(assignData);
     save();
     return true;
@@ -187,14 +259,15 @@ const API = {
         toast('⚠️ ไม่สามารถส่งไปยัง Cloud ได้ บันทึกลงเครื่องแทน');
       }
     }
-    // Local fallback
     const a = data.assignments.find(x => x.id === subData.assignmentId);
     if (!a) return false;
     if (!Array.isArray(a.submissions)) a.submissions = [];
-    const idx = a.submissions.findIndex(s => s.studentName === subData.studentName);
+    const idx = a.submissions.findIndex(s => s.studentName === subData.studentName || (subData.studentId && s.studentId === subData.studentId));
     if (idx >= 0) {
       a.submissions[idx] = {
         ...a.submissions[idx],
+        studentName: subData.studentName,
+        studentId: subData.studentId,
         text: subData.text,
         file: subData.file,
         link: subData.link,
@@ -207,6 +280,7 @@ const API = {
       a.submissions.push({
         id: subData.id || uid(),
         studentName: subData.studentName,
+        studentId: subData.studentId || '',
         text: subData.text,
         file: subData.file,
         link: subData.link,
@@ -238,7 +312,6 @@ const API = {
         toast('⚠️ ไม่สามารถบันทึกคะแนนไปยัง Cloud ได้');
       }
     }
-    // Local fallback
     for (const a of data.assignments) {
       const s = (a.submissions || []).find(x => x.id === subId);
       if (s) {

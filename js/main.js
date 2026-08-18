@@ -24,15 +24,24 @@ function renderHeader(){
     ? '<span class="status-badge cloud" title="เชื่อมต่อ Cloudflare D1 เรียบร้อย" onclick="openApiSettingsModal()">🟢 Cloud</span>'
     : '<span class="status-badge local" title="โหมดออฟไลน์ (LocalStorage)" onclick="openApiSettingsModal()">🟡 Local</span>';
 
+  let studentBadge = '';
+  if (role === 'student' && studentName) {
+    studentBadge = `<span class="chip chip-indigo" style="cursor:pointer; font-weight:700" onclick="switchStudentUser()" title="คลิกเพื่อสลับบัญชีนักศึกษา">👤 ${esc(studentName)} (${esc(studentCode || 'นักศึกษา')}) 🔄</span>`;
+  }
+
   rs.innerHTML =
     modeBadge +
+    studentBadge +
     '<button class="'+(role==='teacher'?'active':'')+'" onclick="switchRole(\'teacher\')">👩‍🏫 ครู</button>'+
     '<button class="'+(role==='student'?'active':'')+'" onclick="switchRole(\'student\')">🧑‍🎓 นักเรียน</button>';
 
   const addBtns = document.getElementById('feedAddBtns');
-  if(addBtns) addBtns.innerHTML = role==='teacher'
-    ? '<button class="btn btn-primary" onclick="openModal(\'postModal\')">'+ICONS.plus+'สร้างโพสต์</button>'
-    : '';
+  if(addBtns) {
+    addBtns.innerHTML = role==='teacher'
+      ? '<button class="btn btn-soft" style="margin-right:8px" onclick="openStudentManagerModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>จัดการรายชื่อนักศึกษา</button>' +
+        '<button class="btn btn-primary" onclick="openModal(\'postModal\')">'+ICONS.plus+'สร้างโพสต์</button>'
+      : '';
+  }
 }
 
 /* ---------- Navigation ---------- */
@@ -60,8 +69,13 @@ function switchRole(r){
   // Switch to Student
   role = 'student';
   localStorage.setItem(ROLE_KEY, 'student');
-  if(!studentName) ensureStudentName();
-  showScreen(currentScreen === 'grading' ? 'feed' : currentScreen);
+  if(!studentName) {
+    ensureStudentName(() => {
+      showScreen(currentScreen === 'grading' ? 'feed' : currentScreen);
+    });
+  } else {
+    showScreen(currentScreen === 'grading' ? 'feed' : currentScreen);
+  }
 }
 
 /* ---------- Cloudflare API Settings Modal ---------- */

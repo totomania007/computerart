@@ -1,5 +1,5 @@
 ﻿-- ============================================================
--- Classwork Hub — Cloudflare D1 Database Schema (Clean)
+-- Classwork Hub — Cloudflare D1 Database Schema
 -- ============================================================
 
 DROP TABLE IF EXISTS submissions;
@@ -8,7 +8,17 @@ DROP TABLE IF EXISTS assignments;
 DROP TABLE IF EXISTS post_comments;
 DROP TABLE IF EXISTS post_likes;
 DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS students;
 
+-- 1. Students table (ตารางรายชื่อนักศึกษา)
+CREATE TABLE students (
+  student_id TEXT PRIMARY KEY,       -- รหัสนักศึกษาเต็ม เช่น "65012345"
+  student_code TEXT NOT NULL,        -- เลข 4 ตัวท้าย เช่น "2345"
+  full_name TEXT NOT NULL,           -- ชื่อ-นามสกุล เช่น "นายสมชาย ใจดี"
+  created_at TEXT NOT NULL
+);
+
+-- 2. Posts table (โพสต์ฟีด)
 CREATE TABLE posts (
   id TEXT PRIMARY KEY,
   type TEXT NOT NULL,
@@ -21,6 +31,7 @@ CREATE TABLE posts (
   created_at TEXT NOT NULL
 );
 
+-- 3. Post Likes table
 CREATE TABLE post_likes (
   post_id TEXT NOT NULL,
   user_name TEXT NOT NULL,
@@ -29,6 +40,7 @@ CREATE TABLE post_likes (
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 );
 
+-- 4. Post Comments table
 CREATE TABLE post_comments (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,
@@ -38,6 +50,7 @@ CREATE TABLE post_comments (
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 );
 
+-- 5. Assignments table
 CREATE TABLE assignments (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -52,6 +65,7 @@ CREATE TABLE assignments (
   created_at TEXT NOT NULL
 );
 
+-- 6. Assignment Example Images table
 CREATE TABLE assignment_examples (
   id TEXT PRIMARY KEY,
   assignment_id TEXT NOT NULL,
@@ -61,10 +75,12 @@ CREATE TABLE assignment_examples (
   FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE
 );
 
+-- 7. Submissions table
 CREATE TABLE submissions (
   id TEXT PRIMARY KEY,
   assignment_id TEXT NOT NULL,
   student_name TEXT NOT NULL,
+  student_id TEXT,
   text TEXT,
   file_name TEXT,
   file_url TEXT,
@@ -78,6 +94,7 @@ CREATE TABLE submissions (
   FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE
 );
 
+CREATE INDEX idx_students_code ON students(student_code);
 CREATE INDEX idx_posts_created ON posts(created_at DESC);
 CREATE INDEX idx_comments_post ON post_comments(post_id);
 CREATE INDEX idx_likes_post ON post_likes(post_id);

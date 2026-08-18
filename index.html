@@ -82,6 +82,52 @@
   </div>
 </div>
 
+<!-- Modal: Student Login (4-digit code) -->
+<div class="overlay" id="studentLoginModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3>🧑‍🎓 เข้าสู่ระบบนักศึกษา</h3>
+      <button class="icon-btn" onclick="closeModal('studentLoginModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px; margin-bottom:14px; color:var(--muted-fg)">กรุณากรอก <b>รหัสนักศึกษา (เลข 4 ตัวท้าย)</b> เพื่อเข้าสู่ระบบส่งงานและดูผลคะแนน</p>
+      <div class="field">
+        <label>รหัสประจำตัว (4 ตัวท้าย)</label>
+        <input type="text" maxlength="12" class="input pin-display" id="studentCodeInput" placeholder="เช่น 2345" onkeydown="if(event.key==='Enter')submitStudentLogin()">
+      </div>
+      <div class="hint" style="margin-top:6px">สามารถพิมพ์เลข 4 ตัวท้าย หรือรหัสนักศึกษาเต็มก็ได้</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('studentLoginModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitStudentLogin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Student Manager (Teacher Only) -->
+<div class="overlay" id="studentManagerModal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <h3>👥 จัดการรายชื่อนักศึกษา (Cloudflare D1)</h3>
+      <button class="icon-btn" onclick="closeModal('studentManagerModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <h4 style="font-size:14px; margin-bottom:8px">📋 รายชื่อนักศึกษาปัจจุบัน</h4>
+      <div id="studentManagerList" style="margin-bottom:18px"></div>
+
+      <h4 style="font-size:14px; margin-bottom:6px">➕ เพิ่ม / นำเข้ารายชื่อนักศึกษาเป็นชุด</h4>
+      <p style="font-size:12px; color:var(--muted-fg); margin-bottom:6px">วางข้อมูลรูปแบบ: <code>รหัสนักศึกษา ชื่อ-นามสกุล</code> (1 คนต่อบรรทัด)</p>
+      <div class="field">
+        <textarea class="textarea" id="studentBatchInput" style="height:110px; font-family:monospace; font-size:13px" placeholder="65012345 นายสมชาย ใจดี&#10;65012346 นางสาวสมหญิง รักเรียน&#10;65012347 นายกิตติศักดิ์ มุ่งมั่น"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('studentManagerModal')">ปิด</button>
+      <button class="btn btn-primary" onclick="importStudentList()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกนำเข้ารายชื่อ</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Cloudflare API Settings -->
 <div class="overlay" id="apiSettingsModal">
   <div class="modal">

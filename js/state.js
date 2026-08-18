@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — state.js
    ข้อมูล + การบันทึก/โหลด (localStorage + Cloud sync)
    ============================================================ */
@@ -11,6 +11,8 @@ const ROLE_KEY = 'cwh_role_v1';
 let data = null;
 let role = localStorage.getItem(ROLE_KEY) || 'teacher';
 let studentName = localStorage.getItem(STUDENT_KEY) || '';
+let studentId = localStorage.getItem('cwh_student_id_v1') || '';
+let studentCode = localStorage.getItem('cwh_student_code_v1') || '';
 let gradingId = null;
 let editingAssignId = null;   // assignment id being submitted
 let editingSubId = null;      // existing submission id being edited

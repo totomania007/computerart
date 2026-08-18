@@ -1,6 +1,6 @@
 ﻿/* ============================================================
    Classwork Hub — utils.js
-   ตัวช่วยทั่วไป + ไอคอน SVG + ระบบยืนยันรหัสครู (PIN)
+   ตัวช่วยทั่วไป + ไอคอน SVG + ระบบยืนยันรหัสครู (PIN) + นักศึกษา (4 เลขท้าย)
    ============================================================ */
 'use strict';
 
@@ -42,13 +42,10 @@ function openModal(id){
 
 /* ---------- Teacher PIN Verification ---------- */
 function verifyTeacherPin(callback) {
-  // If already verified in this session
   if (sessionStorage.getItem('cwh_teacher_auth') === 'true') {
     if (callback) callback(true);
     return true;
   }
-  
-  // Show PIN prompt modal or standard dialog
   openModal('pinModal');
   const input = document.getElementById('pinInput');
   if (input) {
@@ -65,14 +62,14 @@ function submitTeacherPin() {
   if (entered === APP_CONFIG.teacherPin) {
     sessionStorage.setItem('cwh_teacher_auth', 'true');
     closeModal('pinModal');
-    toast('🔓 ยืนยันรหัสผ่านครูถูกต้อง เข้าสู่โหมดครู');
+    toast('🔓 เข้าสู่โหมดครูสำเร็จ');
     if (window._pendingPinCallback) {
       window._pendingPinCallback(true);
       window._pendingPinCallback = null;
     }
     return true;
   } else {
-    toast('❌ รหัสผ่านครูไม่ถูกต้อง (กรุณาลองใหม่อีกครั้ง)');
+    toast('❌ รหัสผ่านครูไม่ถูกต้อง');
     if (input) {
       input.value = '';
       input.focus();
@@ -81,19 +78,72 @@ function submitTeacherPin() {
   }
 }
 
+/* ---------- Student Verification (4-digit Code) ---------- */
+function ensureStudentName(callback) {
+  if (role === 'teacher') {
+    if (callback) callback(true);
+    return true;
+  }
+  if (studentName) {
+    if (callback) callback(true);
+    return true;
+  }
+
+  // Open Student Login Modal
+  openModal('studentLoginModal');
+  const input = document.getElementById('studentCodeInput');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  window._pendingStudentCallback = callback;
+  return false;
+}
+
+async function submitStudentLogin() {
+  const input = document.getElementById('studentCodeInput');
+  const code = (input ? input.value : '').trim();
+  if (!code) {
+    toast('กรุณากรอกรหัสนักศึกษา (4 ตัวท้าย)');
+    return;
+  }
+
+  toast('🔍 กำลังตรวจสอบรหัสนักศึกษา...');
+  const res = await API.verifyStudent(code);
+  if (res && res.valid && res.student) {
+    studentName = res.student.fullName;
+    studentId = res.student.studentId;
+    studentCode = res.student.studentCode;
+    localStorage.setItem(STUDENT_KEY, studentName);
+    localStorage.setItem('cwh_student_id_v1', studentId);
+    localStorage.setItem('cwh_student_code_v1', studentCode);
+    closeModal('studentLoginModal');
+    toast(`👋 ยินดีต้อนรับ: ${studentName} (${studentCode})`);
+    renderHeader();
+    render();
+    if (window._pendingStudentCallback) {
+      window._pendingStudentCallback(true);
+      window._pendingStudentCallback = null;
+    }
+  } else {
+    // If no student found, allow manual entry option or display error
+    const msg = (res && res.error) ? res.error : 'ไม่พบรหัสนี้ในระบบ (กรุณาติดต่อครูผู้สอน)';
+    toast(`❌ ${msg}`);
+  }
+}
+
+function switchStudentUser() {
+  studentName = '';
+  studentId = '';
+  studentCode = '';
+  localStorage.removeItem(STUDENT_KEY);
+  localStorage.removeItem('cwh_student_id_v1');
+  localStorage.removeItem('cwh_student_code_v1');
+  ensureStudentName();
+}
+
 /* ---------- Identity ---------- */
 function currentIdentity(){ return role === 'teacher' ? TEACHER : (studentName || ''); }
-
-function ensureStudentName(){
-  if(role === 'teacher') return true;
-  if(studentName) return true;
-  const name = prompt('กรุณาใส่ชื่อ-นามสกุลของคุณ (ใช้ในการส่งงาน):');
-  if(!name || !name.trim()) return false;
-  studentName = name.trim();
-  localStorage.setItem(STUDENT_KEY, studentName);
-  render();
-  return true;
-}
 
 /* ---------- Files & Lightbox ---------- */
 function openFile(dataUrl, name){
@@ -115,20 +165,6 @@ function ytEmbed(url){
   return m ? 'https://www.youtube.com/embed/' + m[1] : null;
 }
 
-/* ---------- รูปภาพตัวอย่าง (SVG Placeholder) ---------- */
-function svgPic(text, a, b){
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420">'
-    + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
-    + '<stop offset="0" stop-color="'+a+'"/><stop offset="1" stop-color="'+b+'"/>'
-    + '</linearGradient></defs>'
-    + '<rect width="800" height="420" fill="url(#g)"/>'
-    + '<circle cx="660" cy="90" r="70" fill="rgba(255,255,255,.15)"/>'
-    + '<circle cx="120" cy="360" r="50" fill="rgba(255,255,255,.12)"/>'
-    + '<text x="400" y="225" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#fff" text-anchor="middle">'+text+'</text>'
-    + '</svg>';
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-
 /* ---------- ไอคอน SVG (Lucide style) ---------- */
 const ICONS = {
   heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>',
@@ -147,8 +183,7 @@ const ICONS = {
   users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>',
-  cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
-  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+  userCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>'
 };
 
 /* ---------- Metadata สำหรับโพสต์แต่ละประเภท ---------- */
