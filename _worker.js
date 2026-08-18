@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cloudflare Worker & Pages Handler (_worker.js)
  * Serves Static Assets (index.html, css, js) and handles all /api/* routes with D1 Database binding 'DB'
  */
@@ -50,23 +50,30 @@ async function handleApi(request, env, url) {
   const method = request.method.toUpperCase();
   const db = env.DB;
 
-  if (!db) {
-    return errorResponse('Cloudflare D1 database is not bound as "DB". Please add D1 database binding in Cloudflare Dashboard (Settings -> Bindings).', 500);
-  }
-
-  try {
-    // -------------------------------------------------------------
-    // Route: /api/health
-    // -------------------------------------------------------------
-    if (path.length === 0 || path[0] === 'health') {
-      const dbTest = await db.prepare('SELECT count(*) as count FROM posts').first().catch(() => null);
+  // -------------------------------------------------------------
+  // Route: /api/health
+  // -------------------------------------------------------------
+  if (path.length === 0 || path[0] === 'health') {
+    if (!db) {
       return jsonResponse({
         success: true,
         status: 'online',
-        database: dbTest ? 'Cloudflare D1 connected' : 'D1 reachable (tables ready)',
-        postCount: dbTest?.count || 0
+        database: 'waiting_for_binding',
+        message: 'Worker is online, but DB binding is missing. Add D1 binding as "DB" in Cloudflare Dashboard.'
       });
     }
+    const dbTest = await db.prepare('SELECT count(*) as count FROM posts').first().catch(() => null);
+    return jsonResponse({
+      success: true,
+      status: 'online',
+      database: dbTest ? 'Cloudflare D1 connected' : 'D1 connected (ready)',
+      postCount: dbTest?.count || 0
+    });
+  }
+
+  if (!db) {
+    return errorResponse('Cloudflare D1 database is not bound as "DB". Please add D1 database binding in Cloudflare Dashboard (Settings -> Bindings).', 500);
+  }
 
     // -------------------------------------------------------------
     // Route: /api/verify-pin (POST)
