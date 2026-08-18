@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — api.js
    จัดการข้อมูลแบบ Dual-mode (Cloudflare D1 API + LocalStorage Fallback)
    ============================================================ */
@@ -45,12 +45,17 @@ const API = {
     }
     // Local fallback search
     const students = JSON.parse(localStorage.getItem('cwh_students_v1') || '[]');
-    const cleanCode = String(code || '').trim();
-    const found = students.find(s => s.studentCode === cleanCode || s.studentId === cleanCode || (s.studentId && s.studentId.endsWith(cleanCode)));
+    const cleanCode = String(code || '').trim().replace(/\D/g, '');
+    const found = students.find(s => {
+      const sId = String(s.studentId || '').replace(/\D/g, '');
+      const sCode = String(s.studentCode || '').replace(/\D/g, '');
+      const gen8 = sId.length >= 8 ? (sId.slice(0, 4) + sId.slice(-4)) : sId;
+      return sCode === cleanCode || sId === cleanCode || gen8 === cleanCode;
+    });
     if (found) {
       return { success: true, valid: true, student: found };
     }
-    return { success: false, valid: false, error: 'ไม่พบรหัสนักศึกษาในระบบ' };
+    return { success: false, valid: false, error: 'ไม่พบรหัสนักศึกษาในระบบ (กรุณาตรวจสอบรหัส 8 ตัว)' };
   },
 
   async getStudents() {

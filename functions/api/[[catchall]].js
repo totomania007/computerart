@@ -80,23 +80,29 @@ export async function onRequest(context) {
     // Route: /api/students
     // -------------------------------------------------------------
     if (path[0] === 'students') {
-      // POST /api/students/verify — Verify by 4-digit code or Student ID
+      // POST /api/students/verify — Verify by 8-digit code (4 front + 4 back) or Student ID
       if (path.length >= 2 && path[1] === 'verify' && method === 'POST') {
         const body = await request.json().catch(() => ({}));
-        const code = String(body.code || '').trim();
-        if (!code) return errorResponse('กรุณาระบุรหัสประจำตัว (4 ตัวท้าย)');
+        const code = String(body.code || '').trim().replace(/\D/g, '');
+        const rawCode = String(body.code || '').trim();
+        if (!code && !rawCode) return errorResponse('กรุณาระบุรหัสประจำตัว 8 หลัก (4 ตัวหน้า + 4 ตัวท้าย)');
 
-        // Look up by student_code (4 digits) or full student_id
+        // Look up by student_code, student_id, or formatted 8 digits
         let student = await db.prepare(
           'SELECT * FROM students WHERE student_code = ? OR student_id = ?'
-        ).bind(code, code).first();
+        ).bind(code, rawCode).first();
 
-        // If not found and code length is >= 4, try suffix match
-        if (!student && code.length >= 4) {
-          const suffix = code.slice(-4);
-          student = await db.prepare(
-            'SELECT * FROM students WHERE student_code = ?'
-          ).bind(suffix).first();
+        // If not found, try all students to match 4 front + 4 back
+        if (!student) {
+          const allStudents = await db.prepare('SELECT * FROM students').all();
+          for (const s of (allStudents.results || [])) {
+            const cleanId = String(s.student_id).replace(/\D/g, '');
+            const generated8 = cleanId.length >= 8 ? (cleanId.slice(0, 4) + cleanId.slice(-4)) : cleanId;
+            if (generated8 === code || s.student_code === code || s.student_id === rawCode) {
+              student = s;
+              break;
+            }
+          }
         }
 
         if (student) {
@@ -114,7 +120,7 @@ export async function onRequest(context) {
         return jsonResponse({
           success: false,
           valid: false,
-          error: 'ไม่พบรหัสนักศึกษานี้ในระบบ กรุณาตรวจสอบเลข 4 ตัวท้ายอีกครั้ง'
+          error: 'ไม่พบรหัสนักศึกษานี้ในระบบ (กรุณาตรวจสอบรหัส 8 ตัว: 4 ตัวหน้า + 4 ตัวท้าย)'
         });
       }
 
@@ -147,8 +153,13 @@ export async function onRequest(context) {
           const sName = String(s.fullName || s.full_name || s.name || '').trim();
           if (!sId || !sName) continue;
 
-          // 4-digit code: extract last 4 digits of student ID
-          const sCode = String(s.studentCode || s.student_code || s.code || (sId.length >= 4 ? sId.slice(-4) : sId)).trim();
+          // 8-digit code: 4 front + 4 back
+          const cleanDigits = sId.replace(/\D/g, '');
+          let sCode = s.studentCode || s.student_code || s.code;
+          if (!sCode) {
+            sCode = cleanDigits.length >= 8 ? (cleanDigits.slice(0, 4) + cleanDigits.slice(-4)) : cleanDigits;
+          }
+          sCode = String(sCode).trim();
 
           await db.prepare(`
             INSERT INTO students (student_id, student_code, full_name, created_at)

@@ -82,20 +82,20 @@
   </div>
 </div>
 
-<!-- Modal: Student Login (4-digit code) -->
+<!-- Modal: Student Login (8-digit code: 4 front + 4 back) -->
 <div class="overlay" id="studentLoginModal">
-  <div class="modal" style="max-width:420px">
+  <div class="modal" style="max-width:440px">
     <div class="modal-head">
       <h3>🧑‍🎓 เข้าสู่ระบบนักศึกษา</h3>
       <button class="icon-btn" onclick="closeModal('studentLoginModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="modal-body">
-      <p style="font-size:14px; margin-bottom:14px; color:var(--muted-fg)">กรุณากรอก <b>รหัสนักศึกษา (เลข 4 ตัวท้าย)</b> เพื่อเข้าสู่ระบบส่งงานและดูผลคะแนน</p>
+      <p style="font-size:14px; margin-bottom:14px; color:var(--muted-fg)">กรุณากรอก <b>รหัสนักศึกษา 8 ตัว (4 ตัวหน้า + 4 ตัวท้าย)</b> เพื่อเข้าสู่ระบบส่งงานและดูผลคะแนน</p>
       <div class="field">
-        <label>รหัสประจำตัว (4 ตัวท้าย)</label>
-        <input type="text" maxlength="12" class="input pin-display" id="studentCodeInput" placeholder="เช่น 2345" onkeydown="if(event.key==='Enter')submitStudentLogin()">
+        <label>รหัสประจำตัว (4 ตัวหน้า + 4 ตัวท้าย)</label>
+        <input type="text" maxlength="20" class="input pin-display" id="studentCodeInput" placeholder="เช่น 65012345" onkeydown="if(event.key==='Enter')submitStudentLogin()">
       </div>
-      <div class="hint" style="margin-top:6px">สามารถพิมพ์เลข 4 ตัวท้าย หรือรหัสนักศึกษาเต็มก็ได้</div>
+      <div class="hint" style="margin-top:6px">สามารถพิมพ์รหัส 8 ตัว (หน้า 4 + หลัง 4) หรือรหัสนักศึกษาเต็มก็ได้</div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('studentLoginModal')">ยกเลิก</button>

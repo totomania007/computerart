@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — utils.js
    ตัวช่วยทั่วไป + ไอคอน SVG + ระบบยืนยันรหัสครู (PIN) + นักศึกษา (4 เลขท้าย)
    ============================================================ */
@@ -78,7 +78,7 @@ function submitTeacherPin() {
   }
 }
 
-/* ---------- Student Verification (4-digit Code) ---------- */
+/* ---------- Student Verification (8-digit Code: 4 front + 4 back) ---------- */
 function ensureStudentName(callback) {
   if (role === 'teacher') {
     if (callback) callback(true);
@@ -104,11 +104,11 @@ async function submitStudentLogin() {
   const input = document.getElementById('studentCodeInput');
   const code = (input ? input.value : '').trim();
   if (!code) {
-    toast('กรุณากรอกรหัสนักศึกษา (4 ตัวท้าย)');
+    toast('กรุณากรอกรหัสนักศึกษา 8 ตัว (4 ตัวหน้า + 4 ตัวท้าย)');
     return;
   }
 
-  toast('🔍 กำลังตรวจสอบรหัสนักศึกษา...');
+  toast('🔍 กำลังตรวจสอบรหัสนักศึกษา 8 ตัว...');
   const res = await API.verifyStudent(code);
   if (res && res.valid && res.student) {
     studentName = res.student.fullName;
@@ -126,8 +126,7 @@ async function submitStudentLogin() {
       window._pendingStudentCallback = null;
     }
   } else {
-    // If no student found, allow manual entry option or display error
-    const msg = (res && res.error) ? res.error : 'ไม่พบรหัสนี้ในระบบ (กรุณาติดต่อครูผู้สอน)';
+    const msg = (res && res.error) ? res.error : 'ไม่พบรหัสนี้ในระบบ (กรุณาตรวจสอบรหัส 8 ตัว: 4 ตัวหน้า + 4 ตัวท้าย)';
     toast(`❌ ${msg}`);
   }
 }

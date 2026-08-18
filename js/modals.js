@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — modals.js
    ฟอร์มสร้างโพสต์ + ฟอร์มสร้างใบงาน + จัดการรายชื่อนักศึกษา (D1 Sync)
    ============================================================ */
@@ -187,7 +187,7 @@ async function renderStudentManagerList(){
       <thead>
         <tr style="background:var(--muted); border-bottom:2px solid #000; text-align:left">
           <th style="padding:8px">รหัส นศ.</th>
-          <th style="padding:8px">4 ตัวท้าย</th>
+          <th style="padding:8px">รหัส 8 ตัว (หน้า 4+หลัง 4)</th>
           <th style="padding:8px">ชื่อ-นามสกุล</th>
           <th style="padding:8px; text-align:right">จัดการ</th>
         </tr>
@@ -236,7 +236,8 @@ async function importStudentList(){
     if(parts.length >= 2){
       const sId = parts[0].trim();
       const sName = parts.slice(1).join(' ').trim();
-      const sCode = sId.length >= 4 ? sId.slice(-4) : sId;
+      const cleanDigits = sId.replace(/\D/g, '');
+      const sCode = cleanDigits.length >= 8 ? (cleanDigits.slice(0, 4) + cleanDigits.slice(-4)) : (cleanDigits || sId);
       if(sId && sName){
         parsed.push({ studentId: sId, studentCode: sCode, fullName: sName });
       }
