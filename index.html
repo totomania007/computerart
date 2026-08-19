@@ -128,6 +128,96 @@
   </div>
 </div>
 
+<!-- Modal: Edit Post -->
+<div class="overlay" id="editPostModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>✏️ แก้ไขโพสต์</h3>
+      <button class="icon-btn" onclick="closeModal('editPostModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editPostId">
+      <div class="field"><label>ประเภทโพสต์</label>
+        <select class="select" id="editPostType">
+          <option value="example">ตัวอย่างงาน</option>
+          <option value="video">วิดีโอ / ตัวอย่างการสร้างงาน</option>
+          <option value="tutorial">ขั้นตอนการทำ (How-to)</option>
+          <option value="inspiration">แรงบันดาลใจ</option>
+          <option value="announcement">ประกาศ</option>
+        </select>
+      </div>
+      <div class="field"><label>หัวข้อ</label><input class="input" id="editPostTitle" placeholder="เช่น ตัวอย่างผลงานชิ้นเอก"></div>
+      <div class="field"><label>ข้อความ/คำอธิบาย</label><textarea class="textarea" id="editPostText" placeholder="เขียนรายละเอียดโพสต์..."></textarea></div>
+      <div class="field"><label>เปลี่ยนรูปภาพ (ไม่เลือก = ใช้รูปเดิม)</label>
+        <label class="file-input-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span id="editPostImgLabel">คลิกเพื่อเลือกรูปภาพ</span>
+          <input type="file" id="editPostImg" accept="image/*" onchange="onPickFile(this,'editPostImgLabel')">
+        </label>
+      </div>
+      <div class="field"><label>เปลี่ยนวิดีโอ (ไฟล์)</label>
+        <label class="file-input-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+          <span id="editPostVideoLabel">คลิกเพื่อเลือกไฟล์วิดีโอ</span>
+          <input type="file" id="editPostVideoFile" accept="video/*" onchange="onPickFile(this,'editPostVideoLabel')">
+        </label>
+      </div>
+      <div class="field"><label>หรือ ลิงก์ YouTube / วิดีโอภายนอก</label><input class="input" id="editPostVideoUrl" placeholder="https://youtube.com/watch?v=..."></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('editPostModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEditPost()">บันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Teacher Settings (Manage Teachers, PIN, Moderation) -->
+<div class="overlay" id="teacherSettingsModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <h3>⚙️ ตั้งค่าระบบสำหรับครู</h3>
+      <button class="icon-btn" onclick="closeModal('teacherSettingsModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <!-- Tabs -->
+      <div style="display:flex; gap:8px; margin-bottom:14px; border-bottom:2px solid #000; padding-bottom:8px">
+        <button class="btn btn-soft teacher-settings-tab-btn active" data-tab="teachers" onclick="switchTeacherSettingsTab('teachers')">👩‍🏫 จัดการครู & รหัสผ่าน (PIN)</button>
+        <button class="btn btn-soft teacher-settings-tab-btn" data-tab="moderation" onclick="switchTeacherSettingsTab('moderation')">🛡️ จัดการฟีด & โพสต์</button>
+      </div>
+
+      <!-- Pane 1: Teachers & PIN -->
+      <div id="pane-teachers" class="teacher-settings-pane">
+        <h4 style="font-size:14px; margin-bottom:8px">📋 รายชื่อครูผู้สอนในระบบ</h4>
+        <div id="teacherListContainer" style="margin-bottom:18px"></div>
+
+        <h4 style="font-size:14px; margin-bottom:6px">➕ เพิ่มครูผู้สอนใหม่ / กำหนดรหัสผ่าน</h4>
+        <div style="background:var(--muted); border:2px solid #000; padding:12px; border-radius:2px">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px">
+            <div class="field" style="margin-bottom:0">
+              <label>ชื่อครูผู้สอน</label>
+              <input class="input" id="newTeacherName" placeholder="เช่น อ.สมชาย หรือ คุณครูกานต์">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>รหัสผ่านเข้าโหมดครู (PIN)</label>
+              <input class="input" id="newTeacherPin" placeholder="เช่น 1234 หรือ 8888">
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="saveNewTeacher()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>เพิ่มครูผู้สอน</button>
+        </div>
+      </div>
+
+      <!-- Pane 2: Moderation -->
+      <div id="pane-moderation" class="teacher-settings-pane" style="display:none">
+        <h4 style="font-size:14px; margin-bottom:8px">📋 รายการโพสต์ทั้งหมด (แก้ไข / ลบ)</h4>
+        <div id="moderationListContainer"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('teacherSettingsModal')">ปิด</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Cloudflare API Settings -->
 <div class="overlay" id="apiSettingsModal">
   <div class="modal">

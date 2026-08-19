@@ -1,12 +1,12 @@
 ﻿/* ============================================================
    Classwork Hub — feed.js
-   ฟีดสไตล์ Facebook: render โพสต์ + ถูกใจ + คอมเมนต์ + แชร์
+   ฟีดสไตล์ Facebook: render โพสต์ + ถูกใจ + คอมเมนต์ + แชร์ + จัดการ/แก้ไข/ลบ
    ============================================================ */
 'use strict';
 
 function renderFeed(){
   const wrap = document.getElementById('feed');
-  const teacherBar = '<div id="feedAddBtns" style="display:flex; justify-content:flex-end; margin-bottom:14px"></div>';
+  const teacherBar = '<div id="feedAddBtns" style="display:flex; justify-content:flex-end; margin-bottom:14px; gap:8px"></div>';
   let html = teacherBar;
   if(!data.posts.length){
     html += '<div class="card empty"><p>ยังไม่มีโพสต์</p></div>';
@@ -30,15 +30,36 @@ function postCard(p){
     media += '<div class="post-media"><video controls src="'+esc(vUrl)+'"></video></div>';
   }
 
-  const comments = (p.comments||[]).map(c =>
-    '<div class="comment-item">'+avatarOf(c.name, (p.comments||[]).indexOf(c))+
-    '<div class="comment-bubble"><div class="comment-name">'+esc(c.name)+'</div><div class="comment-text">'+esc(c.text)+'</div></div></div>'
-  ).join('');
+  const isTeacher = role === 'teacher';
+
+  const comments = (p.comments||[]).map(c => {
+    const commentControls = isTeacher ? `
+      <div style="display:inline-flex; gap:4px; margin-left:8px">
+        <button class="btn btn-ghost" style="padding:0 4px; font-size:11px" onclick="editComment('${p.id}', '${c.id}', '${esc(c.text)}')">✏️</button>
+        <button class="btn btn-ghost" style="padding:0 4px; font-size:11px; color:#B91C1C" onclick="deleteComment('${p.id}', '${c.id}')">🗑️</button>
+      </div>` : '';
+
+    return '<div class="comment-item">'+avatarOf(c.name, (p.comments||[]).indexOf(c))+
+      '<div class="comment-bubble">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center">' +
+          '<div class="comment-name">'+esc(c.name)+'</div>' +
+          commentControls +
+        '</div>' +
+        '<div class="comment-text" id="cmt-text-'+c.id+'">'+esc(c.text)+'</div>' +
+      '</div></div>';
+  }).join('');
+
+  const teacherPostActions = isTeacher ? `
+    <div style="display:flex; gap:4px; margin-left:auto">
+      <button class="btn btn-soft" style="padding:2px 8px; font-size:12px" onclick="openEditPostModal('${p.id}')">✏️ แก้ไข</button>
+      <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px; color:#B91C1C" onclick="deletePost('${p.id}')">🗑️ ลบ</button>
+    </div>` : '';
 
   return '<article class="post">'+
     '<div class="post-head">'+avatarOf(p.author, (p.likes||[]).length+(p.comments||[]).length)+
       '<div class="post-meta"><div class="post-author">'+esc(p.author)+'</div><div class="post-time">'+fmtDate(p.createdAt)+'</div></div>'+
-      '<span class="chip '+meta.cls+'">'+meta.label+'</span>'+
+      '<span class="chip '+meta.cls+'" style="margin-right:6px">'+meta.label+'</span>'+
+      teacherPostActions +
     '</div>'+
     '<div class="post-body"><div class="post-title">'+esc(p.title)+'</div>'+esc(p.text)+'</div>'+
     media+
@@ -81,6 +102,41 @@ async function addComment(postId){
   input.value = '';
   await API.addComment(postId, { id: uid(), name: userName, text, createdAt: nowISO() });
   renderFeed();
+}
+
+async function deletePost(postId){
+  if(!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้?')) return;
+  toast('⏳ กำลังลบโพสต์...');
+  const ok = await API.deletePost(postId);
+  if(ok){
+    toast('🗑️ ลบโพสต์เรียบร้อย');
+    renderFeed();
+  }
+}
+
+async function deleteComment(postId, commentId){
+  if(!confirm('ลบคอมเมนต์นี้?')) return;
+  toast('⏳ กำลังลบคอมเมนต์...');
+  const ok = await API.deleteComment(postId, commentId);
+  if(ok){
+    toast('🗑️ ลบคอมเมนต์เรียบร้อย');
+    renderFeed();
+  }
+}
+
+async function editComment(postId, commentId, currentText){
+  const newText = prompt('แก้ไขข้อความคอมเมนต์:', currentText);
+  if(newText === null) return;
+  if(!newText.trim()){
+    toast('กรุณาระบุข้อความ');
+    return;
+  }
+  toast('⏳ กำลังบันทึกการแก้ไข...');
+  const ok = await API.updateComment(postId, commentId, newText.trim());
+  if(ok){
+    toast('✏️ แก้ไขคอมเมนต์เรียบร้อย');
+    renderFeed();
+  }
 }
 
 function sharePost(postId){

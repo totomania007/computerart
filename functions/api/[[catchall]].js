@@ -28,6 +28,24 @@ export async function onRequestOptions() {
 async function ensureTables(db) {
   try {
     await db.prepare(`
+      CREATE TABLE IF NOT EXISTS teachers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        pin TEXT NOT NULL DEFAULT '1234',
+        avatar TEXT,
+        created_at TEXT NOT NULL
+      )
+    `).run();
+
+    const tCount = await db.prepare('SELECT count(*) as count FROM teachers').first().catch(() => null);
+    if (!tCount || tCount.count === 0) {
+      await db.prepare(`
+        INSERT INTO teachers (id, name, pin, avatar, created_at)
+        VALUES ('teacher_default', 'คุณครู', '1234', '👩‍🏫', datetime('now'))
+      `).run().catch(() => {});
+    }
+
+    await db.prepare(`
       CREATE TABLE IF NOT EXISTS students (
         student_id TEXT PRIMARY KEY,
         student_code TEXT NOT NULL,
@@ -65,12 +83,14 @@ export async function onRequest(context) {
     await ensureTables(db);
     const dbTest = await db.prepare('SELECT count(*) as count FROM posts').first().catch(() => null);
     const stuTest = await db.prepare('SELECT count(*) as count FROM students').first().catch(() => null);
+    const tTest = await db.prepare('SELECT count(*) as count FROM teachers').first().catch(() => null);
     return jsonResponse({
       success: true,
       status: 'online',
       database: dbTest ? 'Cloudflare D1 connected' : 'D1 connected (ready)',
       postCount: dbTest?.count || 0,
-      studentCount: stuTest?.count || 0
+      studentCount: stuTest?.count || 0,
+      teacherCount: tTest?.count || 0
     });
   }
 
@@ -83,20 +103,115 @@ export async function onRequest(context) {
 
   try {
     // -------------------------------------------------------------
-    // Route: /api/verify-pin (POST) - Teacher PIN
+    // Route: /api/verify-pin (POST) - Teacher PIN Verification
     // -------------------------------------------------------------
     if (path[0] === 'verify-pin' && method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      const pin = String(body.pin || '');
-      const valid = pin === '1234';
-      return jsonResponse({ success: valid, valid });
+      const pin = String(body.pin || '').trim();
+      if (!pin) return jsonResponse({ success: false, valid: false });
+
+      // Look up in teachers table
+      let teacher = await db.prepare('SELECT * FROM teachers WHERE pin = ?').bind(pin).first().catch(() => null);
+      if (!teacher && pin === '1234') {
+        teacher = { id: 'teacher_default', name: 'คุณครู', pin: '1234', avatar: '👩‍🏫' };
+      }
+
+      if (teacher) {
+        return jsonResponse({
+          success: true,
+          valid: true,
+          teacher: {
+            id: teacher.id,
+            name: teacher.name,
+            avatar: teacher.avatar || '👩‍🏫'
+          }
+        });
+      }
+
+      return jsonResponse({ success: false, valid: false, error: 'รหัสผ่านครูไม่ถูกต้อง' });
+    }
+
+    // -------------------------------------------------------------
+    // Route: /api/teachers
+    // -------------------------------------------------------------
+    if (path[0] === 'teachers') {
+      // GET /api/teachers
+      if (path.length === 1 && method === 'GET') {
+        const result = await db.prepare('SELECT id, name, pin, avatar, created_at FROM teachers ORDER BY created_at ASC').all().catch(() => ({ results: [] }));
+        return jsonResponse({
+          success: true,
+          teachers: (result.results || []).map(t => ({
+            id: t.id,
+            name: t.name,
+            pin: t.pin,
+            avatar: t.avatar || '👩‍🏫',
+            createdAt: t.created_at
+          }))
+        });
+      }
+
+      // POST /api/teachers (Add teacher)
+      if (path.length === 1 && method === 'POST') {
+        const body = await request.json().catch(() => null);
+        if (!body || !body.name || !body.pin) {
+          return errorResponse('กรุณาระบุชื่อครูและรหัสผ่าน PIN');
+        }
+
+        const id = body.id || ('teacher_' + Date.now().toString(36));
+        const now = new Date().toISOString();
+
+        await db.prepare(`
+          INSERT INTO teachers (id, name, pin, avatar, created_at)
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(id, body.name.trim(), String(body.pin).trim(), body.avatar || '👩‍🏫', now).run();
+
+        return jsonResponse({ success: true, id, message: 'เพิ่มข้อมูลครูเรียบร้อย' }, 201);
+      }
+
+      // PUT /api/teachers/:id (Edit teacher name/pin/avatar)
+      if (path.length >= 2 && method === 'PUT') {
+        const id = path[1];
+        const body = await request.json().catch(() => null);
+        if (!body) return errorResponse('Invalid payload');
+
+        const existing = await db.prepare('SELECT * FROM teachers WHERE id = ?').bind(id).first().catch(() => null);
+        if (!existing) return errorResponse('ไม่พบข้อมูลครูคนนี้', 404);
+
+        const newName = body.name !== undefined ? String(body.name).trim() : existing.name;
+        const newPin = body.pin !== undefined ? String(body.pin).trim() : existing.pin;
+        const newAvatar = body.avatar !== undefined ? body.avatar : existing.avatar;
+
+        await db.prepare(`
+          UPDATE teachers
+          SET name = ?, pin = ?, avatar = ?
+          WHERE id = ?
+        `).bind(newName, newPin, newAvatar, id).run();
+
+        return jsonResponse({
+          success: true,
+          message: 'อัปเดตข้อมูลครูเรียบร้อย',
+          teacher: { id, name: newName, pin: newPin, avatar: newAvatar }
+        });
+      }
+
+      // DELETE /api/teachers/:id (Delete teacher)
+      if (path.length >= 2 && method === 'DELETE') {
+        const id = path[1];
+        // Ensure not deleting the last remaining teacher
+        const tCount = await db.prepare('SELECT count(*) as count FROM teachers').first().catch(() => null);
+        if (tCount && tCount.count <= 1) {
+          return errorResponse('ไม่สามารถลบครูคนสุดท้ายได้ ต้องมีครูอย่างน้อย 1 คนในระบบ');
+        }
+
+        await db.prepare('DELETE FROM teachers WHERE id = ?').bind(id).run();
+        return jsonResponse({ success: true, message: 'ลบข้อมูลครูเรียบร้อย' });
+      }
     }
 
     // -------------------------------------------------------------
     // Route: /api/students
     // -------------------------------------------------------------
     if (path[0] === 'students') {
-      // POST /api/students/verify — Verify by 8-digit code (4 front + 4 back) or Student ID
       if (path.length >= 2 && path[1] === 'verify' && method === 'POST') {
         const body = await request.json().catch(() => ({}));
         const code = String(body.code || '').trim().replace(/\D/g, '');
@@ -138,7 +253,6 @@ export async function onRequest(context) {
         });
       }
 
-      // GET /api/students — List all students
       if (path.length === 1 && method === 'GET') {
         const result = await db.prepare('SELECT * FROM students ORDER BY student_id ASC').all().catch(() => ({ results: [] }));
         return jsonResponse({
@@ -152,7 +266,6 @@ export async function onRequest(context) {
         });
       }
 
-      // POST /api/students — Add or Bulk import students
       if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body) return errorResponse('Invalid payload');
@@ -188,7 +301,6 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, count: addedCount, message: `บันทึกรายชื่อนักศึกษา ${addedCount} คนเรียบร้อย` }, 201);
       }
 
-      // DELETE /api/students/:id
       if (path.length >= 2 && method === 'DELETE') {
         const id = path[1];
         await db.prepare('DELETE FROM students WHERE student_id = ?').bind(id).run();
@@ -221,6 +333,23 @@ export async function onRequest(context) {
         }
       }
 
+      // DELETE /api/posts/:id/comments/:commentId — Delete Comment
+      if (path.length >= 4 && path[2] === 'comments' && method === 'DELETE') {
+        const commentId = path[3];
+        await db.prepare('DELETE FROM post_comments WHERE id = ?').bind(commentId).run();
+        return jsonResponse({ success: true, message: 'ลบคอมเมนต์เรียบร้อย' });
+      }
+
+      // PUT /api/posts/:id/comments/:commentId — Edit Comment
+      if (path.length >= 4 && path[2] === 'comments' && method === 'PUT') {
+        const commentId = path[3];
+        const body = await request.json().catch(() => ({}));
+        if (!body || !body.text) return errorResponse('กรุณาระบุข้อความคอมเมนต์');
+
+        await db.prepare('UPDATE post_comments SET text = ? WHERE id = ?').bind(body.text.trim(), commentId).run();
+        return jsonResponse({ success: true, message: 'แก้ไขคอมเมนต์เรียบร้อย' });
+      }
+
       // POST /api/posts/:id/comment — Add Comment
       if (path.length >= 3 && path[2] === 'comment' && method === 'POST') {
         const postId = path[1];
@@ -239,6 +368,41 @@ export async function onRequest(context) {
           success: true,
           comment: { id, name: body.name, text: body.text, createdAt }
         }, 201);
+      }
+
+      // PUT /api/posts/:id — Edit Post
+      if (path.length >= 2 && method === 'PUT') {
+        const id = path[1];
+        const body = await request.json().catch(() => null);
+        if (!body || !body.title || !body.text) return errorResponse('กรุณากรอกหัวข้อและเนื้อหาโพสต์');
+
+        const existing = await db.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first().catch(() => null);
+        if (!existing) return errorResponse('ไม่พบโพสต์นี้', 404);
+
+        await db.prepare(`
+          UPDATE posts
+          SET type = ?, title = ?, text = ?, image_url = ?, video_url = ?, video_file_url = ?
+          WHERE id = ?
+        `).bind(
+          body.type || existing.type,
+          body.title.trim(),
+          body.text.trim(),
+          body.image !== undefined ? body.image : existing.image_url,
+          body.videoUrl !== undefined ? body.videoUrl : existing.video_url,
+          body.videoFile !== undefined ? (body.videoFile?.dataUrl || body.videoFile?.url || body.videoFile) : existing.video_file_url,
+          id
+        ).run();
+
+        return jsonResponse({ success: true, message: 'แก้ไขโพสต์สำเร็จ' });
+      }
+
+      // DELETE /api/posts/:id — Delete Post
+      if (path.length >= 2 && method === 'DELETE') {
+        const id = path[1];
+        await db.prepare('DELETE FROM post_likes WHERE post_id = ?').bind(id).run().catch(() => {});
+        await db.prepare('DELETE FROM post_comments WHERE post_id = ?').bind(id).run().catch(() => {});
+        await db.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
+        return jsonResponse({ success: true, message: 'ลบโพสต์เรียบร้อย' });
       }
 
       // GET /api/posts — List all posts
@@ -313,7 +477,7 @@ export async function onRequest(context) {
     // Route: /api/assignments
     // -------------------------------------------------------------
     if (path[0] === 'assignments') {
-      // GET /api/assignments — List all assignments
+      // GET /api/assignments
       if (path.length === 1 && method === 'GET') {
         const assignResult = await db.prepare('SELECT * FROM assignments ORDER BY created_at DESC').all();
         const assignments = assignResult.results || [];
@@ -367,7 +531,7 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, assignments: enrichedAssignments });
       }
 
-      // POST /api/assignments — Create Assignment
+      // POST /api/assignments
       if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || !body.title) return errorResponse('กรุณาระบุชื่อใบงาน');
@@ -412,7 +576,6 @@ export async function onRequest(context) {
     // Route: /api/submissions
     // -------------------------------------------------------------
     if (path[0] === 'submissions') {
-      // PUT /api/submissions/:id/grade — Grade Submission
       if (path.length >= 3 && path[2] === 'grade' && method === 'PUT') {
         const subId = path[1];
         const body = await request.json().catch(() => ({}));
@@ -430,7 +593,6 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, message: 'บันทึกคะแนนสำเร็จ' });
       }
 
-      // POST /api/submissions — Submit work
       if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || !body.assignmentId || !body.studentName) {

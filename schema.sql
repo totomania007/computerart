@@ -9,16 +9,26 @@ DROP TABLE IF EXISTS post_comments;
 DROP TABLE IF EXISTS post_likes;
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS teachers;
 
--- 1. Students table (ตารางรายชื่อนักศึกษา)
+-- 1. Teachers table (ตารางข้อมูลครู & รหัสผ่าน)
+CREATE TABLE teachers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  pin TEXT NOT NULL DEFAULT '1234',
+  avatar TEXT,
+  created_at TEXT NOT NULL
+);
+
+-- 2. Students table (ตารางรายชื่อนักศึกษา)
 CREATE TABLE students (
   student_id TEXT PRIMARY KEY,       -- รหัสนักศึกษาเต็ม เช่น "65012345"
-  student_code TEXT NOT NULL,        -- เลข 4 ตัวท้าย เช่น "2345"
+  student_code TEXT NOT NULL,        -- รหัส 8 ตัว (4 หน้า + 4 หลัง)
   full_name TEXT NOT NULL,           -- ชื่อ-นามสกุล เช่น "นายสมชาย ใจดี"
   created_at TEXT NOT NULL
 );
 
--- 2. Posts table (โพสต์ฟีด)
+-- 3. Posts table (โพสต์ฟีด)
 CREATE TABLE posts (
   id TEXT PRIMARY KEY,
   type TEXT NOT NULL,
@@ -31,7 +41,7 @@ CREATE TABLE posts (
   created_at TEXT NOT NULL
 );
 
--- 3. Post Likes table
+-- 4. Post Likes table
 CREATE TABLE post_likes (
   post_id TEXT NOT NULL,
   user_name TEXT NOT NULL,
@@ -40,7 +50,7 @@ CREATE TABLE post_likes (
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 );
 
--- 4. Post Comments table
+-- 5. Post Comments table
 CREATE TABLE post_comments (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,
@@ -50,7 +60,7 @@ CREATE TABLE post_comments (
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 );
 
--- 5. Assignments table
+-- 6. Assignments table
 CREATE TABLE assignments (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -65,7 +75,7 @@ CREATE TABLE assignments (
   created_at TEXT NOT NULL
 );
 
--- 6. Assignment Example Images table
+-- 7. Assignment Example Images table
 CREATE TABLE assignment_examples (
   id TEXT PRIMARY KEY,
   assignment_id TEXT NOT NULL,
@@ -75,7 +85,7 @@ CREATE TABLE assignment_examples (
   FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE
 );
 
--- 7. Submissions table
+-- 8. Submissions table
 CREATE TABLE submissions (
   id TEXT PRIMARY KEY,
   assignment_id TEXT NOT NULL,
@@ -94,6 +104,11 @@ CREATE TABLE submissions (
   FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE
 );
 
+-- Initial default teacher
+INSERT INTO teachers (id, name, pin, avatar, created_at)
+VALUES ('teacher_default', 'คุณครู', '1234', '👩‍🏫', datetime('now'));
+
+CREATE INDEX idx_teachers_pin ON teachers(pin);
 CREATE INDEX idx_students_code ON students(student_code);
 CREATE INDEX idx_posts_created ON posts(created_at DESC);
 CREATE INDEX idx_comments_post ON post_comments(post_id);

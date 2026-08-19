@@ -56,13 +56,26 @@ function verifyTeacherPin(callback) {
   return false;
 }
 
-function submitTeacherPin() {
+async function submitTeacherPin() {
   const input = document.getElementById('pinInput');
   const entered = (input ? input.value : '').trim();
-  if (entered === APP_CONFIG.teacherPin) {
+  if (!entered) {
+    toast('กรุณาใส่รหัสผ่านครู');
+    return false;
+  }
+
+  toast('🔍 กำลังตรวจสอบรหัสผ่านครู...');
+  const res = await API.verifyTeacherPin(entered);
+  if (res && res.valid && res.teacher) {
     sessionStorage.setItem('cwh_teacher_auth', 'true');
+    if (res.teacher.name) {
+      localStorage.setItem('cwh_teacher_name', res.teacher.name);
+    }
+    if (res.teacher.avatar) {
+      localStorage.setItem('cwh_teacher_avatar', res.teacher.avatar);
+    }
     closeModal('pinModal');
-    toast('🔓 เข้าสู่โหมดครูสำเร็จ');
+    toast(`🔓 ยินดีต้อนรับ ${res.teacher.name || 'คุณครู'}`);
     if (window._pendingPinCallback) {
       window._pendingPinCallback(true);
       window._pendingPinCallback = null;
@@ -142,7 +155,10 @@ function switchStudentUser() {
 }
 
 /* ---------- Identity ---------- */
-function currentIdentity(){ return role === 'teacher' ? TEACHER : (studentName || ''); }
+function currentTeacherName() {
+  return localStorage.getItem('cwh_teacher_name') || TEACHER;
+}
+function currentIdentity(){ return role === 'teacher' ? currentTeacherName() : (studentName || ''); }
 
 /* ---------- Files & Lightbox ---------- */
 function openFile(dataUrl, name){

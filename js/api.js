@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    Classwork Hub — api.js
    จัดการข้อมูลแบบ Dual-mode (Cloudflare D1 API + LocalStorage Fallback)
    ============================================================ */
@@ -27,6 +27,129 @@ const API = {
   },
 
   // -------------------------------------------------------------
+  // Teachers Management & Verification
+  // -------------------------------------------------------------
+  async verifyTeacherPin(pin) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/verify-pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin })
+        });
+        const json = await res.json();
+        if (json.valid) return json;
+      } catch (e) {
+        console.warn('Verify teacher fallback to local:', e);
+      }
+    }
+    const localTeachers = JSON.parse(localStorage.getItem('cwh_teachers_v1') || '[]');
+    const match = localTeachers.find(t => t.pin === pin);
+    if (match) {
+      return { success: true, valid: true, teacher: match };
+    }
+    if (pin === APP_CONFIG.teacherPin || pin === '1234') {
+      return { success: true, valid: true, teacher: { id: 'teacher_default', name: 'คุณครู', pin: '1234', avatar: '👩‍🏫' } };
+    }
+    return { success: false, valid: false, error: 'รหัสผ่านครูไม่ถูกต้อง' };
+  },
+
+  async getTeachers() {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/teachers`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.teachers)) {
+          return json.teachers;
+        }
+      } catch (e) {
+        console.warn('Fallback to local teachers:', e);
+      }
+    }
+    const local = JSON.parse(localStorage.getItem('cwh_teachers_v1') || '[]');
+    if (!local.length) {
+      const def = [{ id: 'teacher_default', name: 'คุณครู', pin: '1234', avatar: '👩‍🏫', createdAt: new Date().toISOString() }];
+      localStorage.setItem('cwh_teachers_v1', JSON.stringify(def));
+      return def;
+    }
+    return local;
+  },
+
+  async addTeacher(teacherData) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/teachers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(teacherData)
+        });
+        const json = await res.json();
+        if (json.success) return true;
+      } catch (e) {
+        console.warn('Add teacher fallback to local:', e);
+      }
+    }
+    const teachers = await this.getTeachers();
+    teachers.push({
+      id: teacherData.id || uid(),
+      name: teacherData.name,
+      pin: teacherData.pin,
+      avatar: teacherData.avatar || '👩‍🏫',
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem('cwh_teachers_v1', JSON.stringify(teachers));
+    return true;
+  },
+
+  async updateTeacher(id, teacherData) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/teachers/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(teacherData)
+        });
+        const json = await res.json();
+        if (json.success) return true;
+      } catch (e) {
+        console.warn('Update teacher fallback to local:', e);
+      }
+    }
+    const teachers = await this.getTeachers();
+    const idx = teachers.findIndex(t => t.id === id);
+    if (idx >= 0) {
+      teachers[idx] = { ...teachers[idx], ...teacherData };
+      localStorage.setItem('cwh_teachers_v1', JSON.stringify(teachers));
+      return true;
+    }
+    return false;
+  },
+
+  async deleteTeacher(id) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/teachers/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) return true;
+        if (json.error) {
+          toast(`⚠️ ${json.error}`);
+          return false;
+        }
+      } catch (e) {
+        console.warn('Delete teacher fallback to local:', e);
+      }
+    }
+    const teachers = await this.getTeachers();
+    if (teachers.length <= 1) {
+      toast('⚠️ ต้องมีครูอย่างน้อย 1 คนในระบบ');
+      return false;
+    }
+    const filtered = teachers.filter(t => t.id !== id);
+    localStorage.setItem('cwh_teachers_v1', JSON.stringify(filtered));
+    return true;
+  },
+
+  // -------------------------------------------------------------
   // Students Management & Verification
   // -------------------------------------------------------------
   async verifyStudent(code) {
@@ -43,7 +166,6 @@ const API = {
         console.warn('Verify fallback to local:', e);
       }
     }
-    // Local fallback search
     const students = JSON.parse(localStorage.getItem('cwh_students_v1') || '[]');
     const cleanCode = String(code || '').trim().replace(/\D/g, '');
     const found = students.find(s => {
@@ -87,7 +209,6 @@ const API = {
         console.warn('Save students fallback to local:', e);
       }
     }
-    // Local fallback
     localStorage.setItem('cwh_students_v1', JSON.stringify(studentsList));
     return true;
   },
@@ -147,6 +268,52 @@ const API = {
     return true;
   },
 
+  async updatePost(postId, postData) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/posts/${postId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(postData)
+        });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+          return true;
+        }
+      } catch (e) {
+        console.warn('Update post fallback to local:', e);
+      }
+    }
+    const idx = data.posts.findIndex(p => p.id === postId);
+    if (idx >= 0) {
+      data.posts[idx] = { ...data.posts[idx], ...postData };
+      save();
+      await this.syncAll();
+      return true;
+    }
+    return false;
+  },
+
+  async deletePost(postId) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/posts/${postId}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+          return true;
+        }
+      } catch (e) {
+        console.warn('Delete post fallback to local:', e);
+      }
+    }
+    data.posts = data.posts.filter(p => p.id !== postId);
+    save();
+    await this.syncAll();
+    return true;
+  },
+
   async toggleLike(postId, userName) {
     if (this.isCloudConnected) {
       try {
@@ -202,6 +369,61 @@ const API = {
     p.comments.push(commentObj);
     save();
     return true;
+  },
+
+  async updateComment(postId, commentId, text) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/posts/${postId}/comments/${commentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+          return true;
+        }
+      } catch (e) {
+        console.warn('Update comment fallback to local:', e);
+      }
+    }
+    const p = data.posts.find(x => x.id === postId);
+    if (p && Array.isArray(p.comments)) {
+      const c = p.comments.find(x => x.id === commentId);
+      if (c) {
+        c.text = text;
+        save();
+        render();
+        return true;
+      }
+    }
+    return false;
+  },
+
+  async deleteComment(postId, commentId) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/posts/${postId}/comments/${commentId}`, {
+          method: 'DELETE'
+        });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+          return true;
+        }
+      } catch (e) {
+        console.warn('Delete comment fallback to local:', e);
+      }
+    }
+    const p = data.posts.find(x => x.id === postId);
+    if (p && Array.isArray(p.comments)) {
+      p.comments = p.comments.filter(c => c.id !== commentId);
+      save();
+      render();
+      return true;
+    }
+    return false;
   },
 
   // -------------------------------------------------------------
