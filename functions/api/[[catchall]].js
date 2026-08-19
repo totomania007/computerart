@@ -587,12 +587,32 @@ export async function onRequest(context) {
         const subsByAssign = {};
         for (const s of (subsResult.results || [])) {
           if (!subsByAssign[s.assignment_id]) subsByAssign[s.assignment_id] = [];
+
+          let parsedFiles = [];
+          let singleFile = null;
+          if (s.file_url) {
+            if (s.file_url.startsWith('[') || s.file_url.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(s.file_url);
+                parsedFiles = Array.isArray(parsed) ? parsed : [parsed];
+                singleFile = parsedFiles[0] || null;
+              } catch (_) {
+                singleFile = { name: s.file_name || 'ไฟล์แนบ', dataUrl: s.file_url, type: s.file_type || '' };
+                parsedFiles = [singleFile];
+              }
+            } else {
+              singleFile = { name: s.file_name || 'ไฟล์แนบ', dataUrl: s.file_url, type: s.file_type || '' };
+              parsedFiles = [singleFile];
+            }
+          }
+
           subsByAssign[s.assignment_id].push({
             id: s.id,
             studentName: s.student_name,
             studentId: s.student_id || '',
             text: s.text || '',
-            file: s.file_url ? { name: s.file_name || 'ไฟล์แนบ', dataUrl: s.file_url, type: s.file_type || '' } : null,
+            file: singleFile,
+            files: parsedFiles,
             link: s.link || '',
             submittedAt: s.submitted_at,
             score: s.score,
@@ -739,10 +759,15 @@ export async function onRequest(context) {
           return errorResponse('กรุณาระบุรหัสใบงานและชื่อนักเรียน');
         }
 
-        const file = body.file || null;
+        const files = Array.isArray(body.files) && body.files.length > 0 ? body.files : (body.file ? [body.file] : []);
+        const file = files[0] || null;
         const subId = body.id || ('sub_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
         const now = new Date().toISOString();
         const studentId = body.studentId || '';
+
+        const fileNameToSave = files.length > 1 ? (files.length + ' ไฟล์แนบ (' + files.map(f => f.name).join(', ') + ')') : (file?.name || null);
+        const fileUrlToSave = files.length > 1 ? JSON.stringify(files) : (file?.dataUrl || file?.url || null);
+        const fileTypeToSave = files.length > 1 ? 'multiple' : (file?.type || null);
 
         const existing = await db.prepare(
           'SELECT id FROM submissions WHERE assignment_id = ? AND (student_name = ? OR (student_id != "" AND student_id = ?))'
@@ -757,9 +782,9 @@ export async function onRequest(context) {
             body.studentName,
             studentId,
             body.text || '',
-            file?.name || null,
-            file?.dataUrl || null,
-            file?.type || null,
+            fileNameToSave,
+            fileUrlToSave,
+            fileTypeToSave,
             body.link || '',
             now,
             existing.id
@@ -776,9 +801,9 @@ export async function onRequest(context) {
             body.studentName,
             studentId,
             body.text || '',
-            file?.name || null,
-            file?.dataUrl || null,
-            file?.type || null,
+            fileNameToSave,
+            fileUrlToSave,
+            fileTypeToSave,
             body.link || '',
             now
           ).run();

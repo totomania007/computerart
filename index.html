@@ -69,9 +69,9 @@
       <button class="icon-btn" onclick="closeModal('pinModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="modal-body">
-      <p style="font-size:14px; margin-bottom:14px; color:var(--muted-fg)">กรุณาใส่รหัสผ่านครู 4 หลักเพื่อเข้าสู่ระบบจัดการและตรวจงาน</p>
+      <p style="font-size:14px; margin-bottom:14px; color:var(--muted-fg)">กรุณาใส่รหัสผ่านครูเพื่อเข้าสู่ระบบจัดการและตรวจงาน</p>
       <div class="field">
-        <label>รหัส PIN (ค่าเริ่มต้น: 1234)</label>
+        <label>รหัสผ่านเข้าโหมดครู (PIN)</label>
         <input type="password" maxlength="8" class="input pin-display" id="pinInput" placeholder="••••" onkeydown="if(event.key==='Enter')submitTeacherPin()">
       </div>
     </div>
@@ -199,7 +199,7 @@
             </div>
             <div class="field" style="margin-bottom:0">
               <label>รหัสผ่านเข้าโหมดครู (PIN)</label>
-              <input class="input" id="newTeacherPin" placeholder="เช่น 1234 หรือ 8888">
+              <input class="input" id="newTeacherPin" placeholder="กำหนดรหัส PIN">
             </div>
           </div>
           <button class="btn btn-primary" style="width:100%" onclick="saveNewTeacher()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>เพิ่มครูผู้สอน</button>

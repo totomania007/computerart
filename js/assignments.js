@@ -112,8 +112,25 @@ function openDetail(id){
       (subCount ? subs.map(s=>'<div class="sub-card"><div class="sub-head">'+avatarOf(s.studentName,1)+'<b>'+esc(s.studentName)+'</b><span class="chip chip-gray">'+fmtDate(s.submittedAt)+'</span>'+subStatusChip(s, a.maxScore)+'</div></div>').join('') : '<p style="color:var(--muted-fg)">ยังไม่มีนักเรียนส่งงาน</p>')+
     '</div>';
   }else{
+    const myFiles = mine ? ((Array.isArray(mine.files) && mine.files.length) ? mine.files : (mine.file ? [mine.file] : [])) : [];
+    let myFilesHtml = '';
+    if (myFiles.length) {
+      myFilesHtml = '<div style="margin-top:12px"><b style="font-size:13px; display:block; margin-bottom:6px">ไฟล์/ภาพที่ส่ง:</b><div style="display:flex; gap:8px; flex-wrap:wrap">' +
+        myFiles.map(f => {
+          const fUrl = f.dataUrl || f.url;
+          const isImg = (f.type && f.type.startsWith('image')) || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(f.name || fUrl);
+          if (isImg) {
+            return `<div style="display:inline-block; border:2px solid #000; border-radius:2px; overflow:hidden; cursor:pointer" onclick="openLightbox('${esc(fUrl)}', '${esc(f.name)}')"><img src="${esc(fUrl)}" style="height:64px; width:64px; object-fit:cover" title="${esc(f.name)}"></div>`;
+          }
+          return `<a class="sub-file" onclick="openFile('${esc(fUrl)}','${esc(f.name)}')">${ICONS.download}${esc(f.name)}</a>`;
+        }).join('') + '</div></div>';
+    }
+
     main += '<div class="card card-pad"><h3 style="font-size:15px; margin-bottom:10px">งานของฉัน</h3>'+subStatusChip(mine, a.maxScore)+
-      (mine && mine.score!=null ? '<div style="margin-top:10px; font-family:Mitr; font-size:20px; color:var(--primary)">คะแนน: '+mine.score+' / '+a.maxScore+'</div>' : '')+
+      (mine && mine.text ? '<div style="margin-top:10px; font-size:13.5px; background:#fff; border:1.5px solid #000; padding:10px 12px; border-radius:2px"><b>คำตอบที่ส่ง:</b><div style="white-space:pre-wrap; margin-top:4px">'+linkify(mine.text)+'</div></div>' : '')+
+      myFilesHtml+
+      (mine && mine.link ? '<div style="margin-top:10px"><a class="sub-file" href="'+esc(mine.link)+'" target="_blank" rel="noopener">'+ICONS.link+'เปิดลิงก์ผลงานที่ส่ง</a></div>' : '')+
+      (mine && mine.score!=null ? '<div style="margin-top:12px; font-family:Mitr; font-size:20px; color:var(--primary)">คะแนน: '+mine.score+' / '+a.maxScore+'</div>' : '')+
       (mine && mine.comment ? '<div style="margin-top:8px; background:var(--muted); border-radius:12px; padding:10px 14px; font-size:14px"><b>คอมเมนต์จากครู:</b> '+esc(mine.comment)+'</div>' : '')+
       '<div style="margin-top:16px"><button class="btn '+(mine?'btn-soft':'btn-accent')+'" onclick="openSubmitModal(\''+a.id+'\')">'+(mine?ICONS.edit+'ส่งงานใหม่':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>ส่งงาน')+'</button></div>'+
     '</div>';
@@ -128,11 +145,15 @@ function openSubmitModal(id){
   const a = data.assignments.find(x=>x.id===id); if(!a) return;
   if(!ensureStudentName()) return;
   editingAssignId = id;
-  const mine = (a.submissions||[]).find(s=>s.studentName===studentName) || null;
+  const mine = (a.submissions||[]).find(s=>s.studentName===studentName || (studentId && s.studentId === studentId)) || null;
   editingSubId = mine ? mine.id : null;
   const overdue = a.dueDate && new Date(a.dueDate).getTime() < Date.now();
 
-  const fileUrl = mine && mine.file ? (mine.file.dataUrl || mine.file.url) : '';
+  const prevFiles = mine ? ((Array.isArray(mine.files) && mine.files.length) ? mine.files : (mine.file ? [mine.file] : [])) : [];
+  let prevFilesLabel = 'คลิกเพื่อเลือกไฟล์/รูปภาพ (เลือกได้หลายไฟล์, สูงสุด 10 ไฟล์)';
+  if (prevFiles.length > 0) {
+    prevFilesLabel = `มีไฟล์เดิม ${prevFiles.length} ไฟล์ (${prevFiles.map(f=>f.name).slice(0, 2).join(', ')}${prevFiles.length > 2 ? '...' : ''}) — เลือกใหม่เพื่อแทนที่`;
+  }
 
   document.getElementById('subTitle').textContent = mine ? 'ส่งงานใหม่: '+a.title : 'ส่งงาน: '+a.title;
   document.getElementById('subBody').innerHTML =
@@ -141,10 +162,9 @@ function openSubmitModal(id){
     '<div class="field"><label>ชื่อ-นามสกุล *</label><input class="input" id="subName" value="'+esc(studentName)+'"></div>'+
     '<div class="field"><label>คำตอบ / รายละเอียดผลงาน</label><textarea class="textarea" id="subText" placeholder="อธิบายสิ่งที่ทำ หรือส่งลิงก์/ไฟล์ด้านล่าง">'+esc(mine?mine.text:'')+'</textarea></div>'+
     '<div class="row">'+
-      '<div class="field"><label>ไฟล์ผลงาน (PDF, รูปภาพ ไม่เกิน 5MB)</label><div class="file-drop" id="subFileDrop" onclick="document.getElementById(\'subFile\').click()"><span id="subFileLabel">'+(mine&&mine.file?esc(mine.file.name):'คลิกเพื่อเลือกไฟล์ (ไม่เกิน 5 MB)')+'</span></div><input type="file" id="subFile" style="display:none" onchange="onPickFile(this,\'subFileLabel\')"><div class="hint">รูปภาพจะถูกบีบอัดให้คมชัดและขนาดเล็กลงอัตโนมัติ</div></div>'+
+      '<div class="field"><label>แนบไฟล์ผลงาน (เลือกได้หลายไฟล์/รูปภาพ, ไฟล์ละไม่เกิน 5MB)</label><div class="file-drop" id="subFilesDrop" onclick="document.getElementById(\'subFiles\').click()"><span id="subFilesLabel">'+prevFilesLabel+'</span></div><input type="file" id="subFiles" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.psd" style="display:none" onchange="onPickMultipleFiles(this,\'subFilesLabel\',10)"><div class="hint">รูปภาพจะถูกบีบอัดให้คมชัดอัตโนมัติ และเอกสารไม่เกิน 5MB ต่อไฟล์</div></div>'+
       '<div class="field"><label>หรือลิงก์ผลงาน (Google Drive ฯลฯ)</label><input class="input" id="subLink" placeholder="https://..." value="'+esc(mine?mine.link:'')+'"></div>'+
-    '</div>'+
-    (mine && fileUrl ? '<button class="btn btn-ghost" style="margin-bottom:10px" onclick="openFile(\''+esc(fileUrl)+'\',\''+esc(mine.file.name)+'\')">'+ICONS.download+'ดูไฟล์ที่ส่งเดิม</button>' : '');
+    '</div>';
   openModal('submitModal');
 }
 
@@ -155,13 +175,22 @@ async function submitWork(){
   studentName = name; localStorage.setItem(STUDENT_KEY, name);
   const text = document.getElementById('subText').value.trim();
   const link = document.getElementById('subLink').value.trim();
-  const fileInput = document.getElementById('subFile');
+  const fileInput = document.getElementById('subFiles');
+
+  const mine = (a.submissions||[]).find(s=>s.studentName===studentName || (studentId && s.studentId === studentId)) || null;
 
   try {
-    let fileObj = null;
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-      const res = await uploadToCloudinary(fileInput.files[0]);
-      if (res) fileObj = { name: res.name, dataUrl: res.url, url: res.url, type: res.type };
+    let uploadedFiles = [];
+    if (fileInput && fileInput.files && fileInput.files.length) {
+      toast(`⏳ กำลังอัปโหลด ${fileInput.files.length} ไฟล์เข้าสู่ระบบ...`);
+      for (let i = 0; i < fileInput.files.length; i++) {
+        const res = await uploadToCloudinary(fileInput.files[i]);
+        if (res) {
+          uploadedFiles.push({ name: res.name, dataUrl: res.url, url: res.url, type: res.type });
+        }
+      }
+    } else if (mine) {
+      uploadedFiles = (Array.isArray(mine.files) && mine.files.length) ? mine.files : (mine.file ? [mine.file] : []);
     }
 
     const subData = {
@@ -171,7 +200,8 @@ async function submitWork(){
       studentId: studentId || '',
       text,
       link,
-      file: fileObj
+      files: uploadedFiles,
+      file: uploadedFiles[0] || null
     };
 
     await API.submitWork(subData);
@@ -179,10 +209,10 @@ async function submitWork(){
     if (textEl) textEl.value = '';
     const linkEl = document.getElementById('subLink');
     if (linkEl) linkEl.value = '';
-    const fileEl = document.getElementById('subFile');
+    const fileEl = document.getElementById('subFiles');
     if (fileEl) fileEl.value = '';
     closeModal('submitModal');
-    toast('✅ ส่งงานเรียบร้อย');
+    toast('✅ ส่งงานเรียบร้อย' + (uploadedFiles.length > 1 ? ` (${uploadedFiles.length} ไฟล์)` : ''));
     openDetail(a.id);
   } catch (err) {
     console.error(err);

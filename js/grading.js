@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — grading.js
    หน้าตรวจงาน (ครู): ให้คะแนน + คอมเมนต์ + บันทึก (API Sync)
    ============================================================ */
@@ -37,17 +37,28 @@ function renderGrading(){
 function gradingCard(a, s){
   const isGraded = s.score != null;
   const saved = isGraded ? '<span class="saved-flash">'+ICONS.check+'บันทึกแล้ว'+(s.gradedAt?' • '+fmtDate(s.gradedAt):'')+'</span>' : '';
-  const fileUrl = s.file ? (s.file.dataUrl || s.file.url) : '';
+  const files = (Array.isArray(s.files) && s.files.length) ? s.files : (s.file ? [s.file] : []);
+  let filesHtml = '';
+  if (files.length) {
+    filesHtml = '<div style="margin:8px 0"><b style="font-size:12.5px; display:block; margin-bottom:6px">ไฟล์/ภาพที่ส่ง ('+files.length+' ไฟล์):</b><div style="display:flex; gap:8px; flex-wrap:wrap">' +
+      files.map(f => {
+        const fUrl = f.dataUrl || f.url;
+        const isImg = (f.type && f.type.startsWith('image')) || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(f.name || fUrl);
+        if (isImg) {
+          return `<div style="display:inline-block; border:2px solid #000; border-radius:2px; overflow:hidden; cursor:pointer" onclick="openLightbox('${esc(fUrl)}', '${esc(f.name)}')"><img src="${esc(fUrl)}" style="height:70px; width:70px; object-fit:cover" title="${esc(f.name)}"></div>`;
+        }
+        return `<span class="sub-file" onclick="openFile('${esc(fUrl)}','${esc(f.name)}')">${ICONS.download}${esc(f.name)}</span>`;
+      }).join('') + '</div></div>';
+  }
+
   return '<div class="card card-pad" style="margin-bottom:14px">'+
     '<div class="sub-head">'+avatarOf(s.studentName,1)+'<div><b style="font-size:14.5px">'+esc(s.studentName)+'</b>'+
       '<div style="font-size:12px; color:var(--muted-fg)">ส่งเมื่อ '+fmtDate(s.submittedAt)+'</div></div>'+
       '<div style="margin-left:auto">'+saved+'</div>'+
     '</div>'+
     (s.text?'<div class="sub-body">'+esc(s.text)+'</div>':'')+
-    '<div style="display:flex; gap:8px; flex-wrap:wrap; margin:8px 0">'+
-      (s.file?'<span class="sub-file" onclick="openFile(\''+esc(fileUrl)+'\',\''+esc(s.file.name)+'\')">'+ICONS.download+esc(s.file.name)+'</span>':'')+
-      (s.link?'<a class="sub-file" href="'+esc(s.link)+'" target="_blank" rel="noopener">'+ICONS.link+'เปิดลิงก์ผลงาน</a>':'')+
-    '</div>'+
+    filesHtml+
+    (s.link?'<div style="margin:8px 0"><a class="sub-file" href="'+esc(s.link)+'" target="_blank" rel="noopener">'+ICONS.link+'เปิดลิงก์ผลงาน</a></div>':'')+
     '<div class="grade-grid">'+
       '<div><label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px">คะแนน</label>'+
         '<input type="number" class="input score-input" id="score-'+s.id+'" min="0" max="'+a.maxScore+'" value="'+(s.score??'')+'" placeholder="—"></div>'+
