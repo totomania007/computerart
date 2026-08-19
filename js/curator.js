@@ -1,6 +1,6 @@
 ﻿/* ============================================================
    Classwork Hub — curator.js
-   ระบบ AI Art Curator: คอนเทนต์ศิลปะดิจิทัลพร้อมภาพประกอบ/อินโฟกราฟิกตรงตามเนื้อหา 100%
+   ระบบ AI Art Curator: คอนเทนต์ศิลปะดิจิทัลพร้อมภาพประกอบ อินโฟกราฟิก ลิงก์ศึกษาต่อ และแหล่งอ้างอิงเครดิต
    - วันที่ 1 โพสต์
    - วันที่ 2 เพิ่มอีก 2 โพสต์
    - วันที่ 3 เพิ่มอีก 2 โพสต์
@@ -271,7 +271,7 @@ const SVG_HAIR_CUTOUT = makeSvgDataUrl(`
 `);
 
 // -------------------------------------------------------------
-// คลังคอนเทนต์ Digital Art ที่รูปภาพตรงกับเนื้อหา 100%
+// คลังคอนเทนต์ Digital Art พร้อมลิงก์ศึกษาต่อ และ แหล่งอ้างอิง/เครดิต
 // -------------------------------------------------------------
 const DIGITAL_ART_CATALOG = [
   {
@@ -279,7 +279,7 @@ const DIGITAL_ART_CATALOG = [
     title: '🎨 ทฤษฎีสี 60-30-10: เคล็ดลับคุมโทนให้งาน Digital Art ดูโปร',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🎨',
-    text: 'การใช้สีในงานศิลปะดิจิทัลให้ลงตัว ลองใช้สูตร 60-30-10:\n• 60% สีหลัก (Dominant Color) เช่น สีพื้นหลังหรือบรรยากาศโดยรวม\n• 30% สีรอง (Secondary Color) เช่น ตัวละครหรือองค์ประกอบหลัก\n• 10% สีไฮไลต์ (Accent Color) สีที่ตัดกันเพื่อดึงดูดสายตาไปยังจุดเด่น (Focal Point)\n\nลองสังเกตแผนภาพอินโฟกราฟิกด้านล่างเพื่อนำไปปรับใช้กับการลงสีภาพใน Photoshop หรือ Photopea ดูนะครับ!',
+    text: 'การใช้สีในงานศิลปะดิจิทัลให้ลงตัว ลองใช้สูตร 60-30-10:\n• 60% สีหลัก (Dominant Color) เช่น สีพื้นหลังหรือบรรยากาศโดยรวม\n• 30% สีรอง (Secondary Color) เช่น ตัวละครหรือองค์ประกอบหลัก\n• 10% สีไฮไลต์ (Accent Color) สีที่ตัดกันเพื่อดึงดูดสายตาไปยังจุดเด่น (Focal Point)\n\nลองสังเกตแผนภาพอินโฟกราฟิกด้านล่างเพื่อนำไปปรับใช้กับการลงสีภาพใน Photoshop หรือ Photopea ดูนะครับ!\n\n🔗 ศึกษาเครื่องมือสร้าง Palette สีเพิ่มเติม: https://coolors.co/ และ https://color.adobe.com/\n📚 แหล่งอ้างอิง & เครดิต: Interaction Design Foundation & Adobe Design Principles',
     image: SVG_COLOR_60_30_10,
     videoUrl: null
   },
@@ -288,7 +288,7 @@ const DIGITAL_ART_CATALOG = [
     title: '💡 3 Blending Modes ใน Photoshop ที่สายกราฟิกต้องใช้เป็นประจำ',
     author: 'AI Art Curator 🤖',
     authorAvatar: '💡',
-    text: 'โหมดผสมเลเยอร์ (Layer Blending Modes) สำคัญ 3 กลุ่มที่ต้องใช้งานบ่อยที่สุด:\n1. Multiply (Darken): ตัดสีขาวออก เหมาะสำหรับลงเงามืดและคัดลอกเส้นหมึก\n2. Screen (Lighten): ตัดสีดำออก เหมาะสำหรับสร้างเอฟเฟกต์แสง แสงนีออน และประกายไฟ\n3. Overlay (Contrast): เพิ่มมิติความเปรียบต่างของแสงเงาและเคลือบ Texture ให้กลมกลืน\n\n📌 ดูสรุปการทำงานในแต่ละโหมดจากอินโฟกราฟิกด้านล่างได้เลยครับ!',
+    text: 'โหมดผสมเลเยอร์ (Layer Blending Modes) สำคัญ 3 กลุ่มที่ต้องใช้งานบ่อยที่สุด:\n1. Multiply (Darken): ตัดสีขาวออก เหมาะสำหรับลงเงามืดและคัดลอกเส้นหมึก\n2. Screen (Lighten): ตัดสีดำออก เหมาะสำหรับสร้างเอฟเฟกต์แสง แสงนีออน และประกายไฟ\n3. Overlay (Contrast): เพิ่มมิติความเปรียบต่างของแสงเงาและเคลือบ Texture ให้กลมกลืน\n\n📌 ดูสรุปการทำงานในแต่ละโหมดจากอินโฟกราฟิกด้านล่างได้เลยครับ!\n\n🔗 ทดลองฝึกใช้งานฟรีบนเว็บ: https://www.photopea.com/\n📚 แหล่งอ้างอิง & เครดิต: Adobe Photoshop User Guide - Blending Modes',
     image: SVG_BLENDING_MODES,
     videoUrl: null
   },
@@ -297,7 +297,7 @@ const DIGITAL_ART_CATALOG = [
     title: '🎬 Speed Painting & Concept Art: เทคนิคการจัดแสงบรรยากาศ',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🎬',
-    text: 'ชมขั้นตอนการสร้างงาน Concept Art ตั้งแต่ร่างภาพขาวดำ (Thumbnail Sketch) ไปจนถึงการลงสีและจัดแสงแบบ Cinematic Lighting สังเกตการใช้แปรง Texture Brush เพื่อสร้างความสมจริงของพื้นผิว',
+    text: 'ชมขั้นตอนการสร้างงาน Concept Art ตั้งแต่ร่างภาพขาวดำ (Thumbnail Sketch) ไปจนถึงการลงสีและจัดแสงแบบ Cinematic Lighting สังเกตการใช้แปรง Texture Brush เพื่อสร้างความสมจริงของพื้นผิว\n\n🔗 แหล่งเรียนรู้ Concept Art เพิ่มเติม: https://www.artstation.com/learning\n📚 แหล่งอ้างอิง & เครดิต: Feng Zhu Design (FZD School) & Concept Art World',
     image: null,
     videoUrl: 'https://www.youtube.com/watch?v=rgVPGPHyHbc'
   },
@@ -306,7 +306,7 @@ const DIGITAL_ART_CATALOG = [
     title: '🌟 เทคนิค Rim Light: สร้างแสงขอบให้ตัวละครลอยเด่นจากฉากหลัง',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🌟',
-    text: 'Rim Light หรือ Kicker Light คือแสงที่ส่องมาจากด้านหลังของตัวแบบ (Backlight) ทำให้เกิดเส้นขอบสว่างรอบตัวละคร\n\n✨ ประโยชน์:\n• แยกตัวละครออกจากพื้นหลังที่มืด\n• เพิ่มความเท่ สไตล์ภาพยนตร์ไซไฟ/แฟนตาซี\n• วิธีทำง่ายๆ ใน Photopea/Photoshop: ใช้เลเยอร์โหมด Color Dodge หรือ Linear Dodge วาดขอบแสงตามทิศทางของแหล่งกำเนิดแสงด้านหลัง',
+    text: 'Rim Light หรือ Kicker Light คือแสงที่ส่องมาจากด้านหลังของตัวแบบ (Backlight) ทำให้เกิดเส้นขอบสว่างรอบตัวละคร\n\n✨ ประโยชน์:\n• แยกตัวละครออกจากพื้นหลังที่มืด\n• เพิ่มความเท่ สไตล์ภาพยนตร์ไซไฟ/แฟนตาซี\n• วิธีทำง่ายๆ ใน Photopea/Photoshop: ใช้เลเยอร์โหมด Color Dodge หรือ Linear Dodge วาดขอบแสงตามทิศทางของแหล่งกำเนิดแสงด้านหลัง\n\n🔗 บทเรียนพื้นฐานเรื่องแสงเงา: https://www.ctrlpaint.com/\n📚 แหล่งอ้างอิง & เครดิต: James Gurney - Color and Light: A Guide for the Realist Painter',
     image: SVG_RIM_LIGHT,
     videoUrl: null
   },
@@ -315,7 +315,7 @@ const DIGITAL_ART_CATALOG = [
     title: '🤖 Prompt Engineering: สูตรสั่ง AI สร้างภาพแนว Cyberpunk & Concept Art',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🤖',
-    text: 'แจกสูตรโครงสร้าง 4 ส่วนในการสั่ง AI สร้างภาพศิลปะแนว Concept Art:\n1. Subject (ประธานของภาพ): กำหนดสิ่งของ/สถานที่หลัก\n2. Art Style (สไตล์ศิลปะ): เช่น Concept Art, Matte Painting\n3. Lighting (การจัดแสง): เช่น Dramatic Rim Lighting, Glowing Neon\n4. Engine / Quality: เช่น Unreal Engine 5, 8k Octane Render\n\n💬 ดูตัวอย่างการประกอบ Prompt ในภาพด้านล่างเพื่อนำไปปรับใช้ใน Midjourney หรือ Adobe Firefly ได้ทันที!',
+    text: 'แจกสูตรโครงสร้าง 4 ส่วนในการสั่ง AI สร้างภาพศิลปะแนว Concept Art:\n1. Subject (ประธานของภาพ): กำหนดสิ่งของ/สถานที่หลัก\n2. Art Style (สไตล์ศิลปะ): เช่น Concept Art, Matte Painting\n3. Lighting (การจัดแสง): เช่น Dramatic Rim Lighting, Glowing Neon\n4. Engine / Quality: เช่น Unreal Engine 5, 8k Octane Render\n\n💬 ดูตัวอย่างการประกอบ Prompt ในภาพด้านล่างเพื่อนำไปปรับใช้ใน Midjourney หรือ Adobe Firefly ได้ทันที!\n\n🔗 เครื่องมือทดลองสร้างภาพ AI ฟรี: https://firefly.adobe.com/ และ https://www.bing.com/create\n📚 แหล่งอ้างอิง & เครดิต: OpenAI DALL-E & Midjourney Prompt Engineering Documentation',
     image: SVG_AI_PROMPT_FORMULA,
     videoUrl: null
   },
@@ -324,7 +324,7 @@ const DIGITAL_ART_CATALOG = [
     title: '📐 Rule of Thirds (กฎสามส่วน) ในการจัดองค์ประกอบภาพศิลปะ',
     author: 'AI Art Curator 🤖',
     authorAvatar: '📐',
-    text: 'อย่าเพิ่งวางจุดสนใจไว้ตรงกลางเสมอไป! ลองแบ่งพื้นที่ภาพเป็นตาราง 3x3 แล้ววางตำแหน่งตัวละคร จุดสนใจ หรือดวงตาไว้ที่ "จุดตัดเก้าช่อง" (จุดสีแดงตามแผนผัง)\n\nข้อดี:\n• ทำให้ภาพดูมีชีวิตชีวาและมีการเคลื่อนไหว (Dynamic)\n• มีพื้นที่ว่าง (Negative Space) ให้นำสายตาและสร้างเรื่องราวได้อย่างสมดุล',
+    text: 'อย่าเพิ่งวางจุดสนใจไว้ตรงกลางเสมอไป! ลองแบ่งพื้นที่ภาพเป็นตาราง 3x3 แล้ววางตำแหน่งตัวละคร จุดสนใจ หรือดวงตาไว้ที่ "จุดตัดเก้าช่อง" (จุดสีแดงตามแผนผัง)\n\nข้อดี:\n• ทำให้ภาพดูมีชีวิตชีวาและมีการเคลื่อนไหว (Dynamic)\n• มีพื้นที่ว่าง (Negative Space) ให้นำสายตาและสร้างเรื่องราวได้อย่างสมดุล\n\n🔗 ศึกษาทฤษฎีการจัดองค์ประกอบศิลป์: https://www.canva.com/learn/visual-design-composition/\n📚 แหล่งอ้างอิง & เครดิต: John Thomas Smith (1797) - Remarks on Rural Scenery & Canva Design School',
     image: SVG_RULE_OF_THIRDS,
     videoUrl: null
   },
@@ -333,7 +333,7 @@ const DIGITAL_ART_CATALOG = [
     title: '🎨 Color Palette ประจำวัน: Neon Noir Aesthetic',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🎨',
-    text: 'ชุดคู่สีแนะนำสำหรับงานอาร์ตแนว Cyberpunk และ Sci-Fi:\n• 🟣 Cyber Magenta (#FF007F)\n• 🔵 Deep Cyan (#00F0FF)\n• 🟡 Electric Amber (#FFDE59)\n• ⚫ Charcoal Background (#121214)\n\nสามารถคัดลอกรหัสโค้ดสี Hex Code ในภาพไปใช้สร้าง Palette สีในโปรแกรมออกแบบได้ทันทีครับ!',
+    text: 'ชุดคู่สีแนะนำสำหรับงานอาร์ตแนว Cyberpunk และ Sci-Fi:\n• 🟣 Cyber Magenta (#FF007F)\n• 🔵 Deep Cyan (#00F0FF)\n• 🟡 Electric Amber (#FFDE59)\n• ⚫ Charcoal Background (#121214)\n\nสามารถคัดลอกรหัสโค้ดสี Hex Code ในภาพไปใช้สร้าง Palette สีในโปรแกรมออกแบบได้ทันทีครับ!\n\n🔗 ดาวน์โหลด Color Palette ชุดนี้: https://coolors.co/palettes/trending/cyberpunk\n📚 แหล่งอ้างอิง & เครดิต: Cyberpunk 2077 Visual Art Direction & Syd Mead (Futurist Designer)',
     image: SVG_PALETTE_NEON_NOIR,
     videoUrl: null
   },
@@ -342,7 +342,7 @@ const DIGITAL_ART_CATALOG = [
     title: '🖌️ 4 ขั้นตอนไดคัทเส้นผมและขนสัตว์ใน Photopea / Photoshop',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🖌️',
-    text: 'ไดคัทเส้นผมให้เนียนแบบไม่แหว่ง:\n1. Quick Selection: เลือกตัวแบบคร่าวๆ\n2. Select and Mask / Refine Edge: เข้าสู่โหมดปรับแต่งขอบ\n3. Refine Radius Tool: ใช้แปรงระบายเก็บไรผมทีละนิด\n4. Decontaminate Colors: ติ๊กลบขอบสีเดิมและส่งออกเป็น Layer Mask\n\n📌 ดูขั้นตอนสรุปพร้อมใช้งานจากภาพอินโฟกราฟิกด้านล่างได้เลยครับ!',
+    text: 'ไดคัทเส้นผมให้เนียนแบบไม่แหว่ง:\n1. Quick Selection: เลือกตัวแบบคร่าวๆ\n2. Select and Mask / Refine Edge: เข้าสู่โหมดปรับแต่งขอบ\n3. Refine Radius Tool: ใช้แปรงระบายเก็บไรผมทีละนิด\n4. Decontaminate Colors: ติ๊กลบขอบสีเดิมและส่งออกเป็น Layer Mask\n\n📌 ดูขั้นตอนสรุปพร้อมใช้งานจากภาพอินโฟกราฟิกด้านล่างได้เลยครับ!\n\n🔗 คู่มือการใช้เครื่องมือ Refine Edge: https://www.photopea.com/learn/refine-edge\n📚 แหล่งอ้างอิง & เครดิต: Adobe Creative Cloud Tutorials & Photopea Official Documentation',
     image: SVG_HAIR_CUTOUT,
     videoUrl: null
   }
