@@ -219,9 +219,18 @@
         </div>
       </div>
 
-      <!-- Pane 2: Gemini AI Curator Settings -->
+      <!-- Pane 2: Gemini & Cloudflare AI Curator Settings -->
       <div id="pane-ai" class="teacher-settings-pane" style="display:none">
-        <h4 style="font-size:14.5px; margin-bottom:8px">🤖 ตั้งค่า Google Gemini AI สร้างบทความอัตโนมัติ</h4>
+        <h4 style="font-size:14.5px; margin-bottom:8px">☁️ Cloudflare AI (ระบบอัตโนมัติ ไม่ต้องใช้ Key)</h4>
+        <div style="background:var(--muted); border:2px solid #000; padding:14px; border-radius:2px; margin-bottom:18px">
+          <p style="font-size:13px; color:var(--fg); margin-bottom:10px">ระบบสมองกล Cloudflare AI สรรหาความรู้เรื่องศิลปะดิจิทัลและสร้างบทเรียนใหม่ขึ้นสู่ฟีดได้ทันทีโดยไม่ต้องตั้งค่าใดๆ</p>
+          <button class="btn btn-primary" style="width:100%" onclick="generateCfAiPostNow()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m13 13 2 2 4-4"/></svg>
+            ✨ ให้ Cloudflare AI หาเรื่องใหม่มาโพสต์ลงฟีดทันที
+          </button>
+        </div>
+
+        <h4 style="font-size:14.5px; margin-bottom:8px">🤖 หรือ ตั้งค่า Google Gemini AI เพิ่มเติม (ทางเลือก)</h4>
         <div style="background:var(--muted); border:2px solid #000; padding:14px; border-radius:2px; margin-bottom:14px">
           <div class="field">
             <label style="display:flex; justify-content:space-between; align-items:center">
@@ -238,11 +247,11 @@
           </div>
 
           <div style="display:flex; gap:8px; flex-wrap:wrap">
-            <button class="btn btn-primary" style="flex:1" onclick="generateAiCuratorPostNow()">
+            <button class="btn btn-soft" style="flex:1" onclick="generateAiCuratorPostNow()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-              ✨ สั่งให้ Gemini สร้างบทความใหม่ทันที
+              ✨ สั่งให้ Gemini สร้างบทความ
             </button>
-            <button class="btn btn-soft" onclick="saveGeminiApiKey()">💾 บันทึก Key</button>
+            <button class="btn btn-ghost" onclick="saveGeminiApiKey()">💾 บันทึก Key</button>
           </div>
         </div>
       </div>

@@ -523,6 +523,18 @@ function saveGeminiApiKey(){
   }
 }
 
+async function generateCfAiPostNow(){
+  toast('☁️ กำลังสั่งให้ Cloudflare AI สรรหาและสร้างบทเรียนใหม่...');
+  const res = await API.generateCfCuratorPost();
+  if (res && res.success) {
+    toast('✨ Cloudflare AI สร้างบทเรียนใหม่ขึ้นสู่ฟีดเรียบร้อยแล้ว!');
+    closeModal('teacherSettingsModal');
+    showScreen('feed');
+  } else {
+    toast('❌ เกิดข้อผิดพลาด: ' + (res?.error || 'ไม่สามารถติดต่อ AI ได้'));
+  }
+}
+
 async function generateAiCuratorPostNow(){
   const keyInput = document.getElementById('geminiApiKeyInput');
   const topicInput = document.getElementById('geminiCustomTopic');

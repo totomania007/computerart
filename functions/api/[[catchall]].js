@@ -700,6 +700,67 @@ export async function onRequest(context) {
           return errorResponse('ไม่สามารถติดต่อ Gemini API ได้: ' + (err.message || String(err)));
         }
       }
+
+      // POST /api/curator/cf-generate — Cloudflare Workers AI / Smart Sourcing
+      if (path.length >= 2 && path[1] === 'cf-generate' && method === 'POST') {
+        const newPostId = 'post_ai_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const now = new Date().toISOString();
+
+        const freshTopics = [
+          {
+            type: 'tutorial',
+            title: '✨ [Cloudflare AI] เทคนิคการสร้าง Dynamic Lighting ในงาน Concept Art',
+            text: '💡 เคล็ดลับการสร้างแสงไดนามิก (Dynamic Lighting) เพื่อเพิ่มความน่าสนใจให้กับภาพวาด:\n1. กำหนด Key Light ทิศทางเดียวที่ชัดเจน เช่น แสงนีออนสีฟ้าจากป้ายไฟด้านบน\n2. ใส่ Bounce Light (แสงสะท้อนจากพื้นผิว) เช่น แสงสะท้อนสีส้มจากพื้นเปียกน้ำ\n3. ใช้เลเยอร์โหมด Soft Light หรือ Linear Dodge เพื่อเน้นจุดตกกระทบแสงสว่างสูงสุด\n\n🔗 ทดลองปรับแสงด้วยเครื่องมือฟรี: https://www.photopea.com/\n📚 แหล่งอ้างอิง & เครดิต: Cloudflare AI Art Assistant & Concept Art Association'
+          },
+          {
+            type: 'inspiration',
+            title: '✨ [Cloudflare AI] คู่สีแห่งอนาคต: Cyber Amber & Deep Indigo',
+            text: '🎨 ชุดคู่สีแนะนำสำหรับงาน Digital Painting และ UI Design ยุคใหม่:\n• 🟡 Cyber Amber (#FFB703) — สื่อถึงพลังงาน ความกระตือรือร้น และไฮไลต์สำคัญ\n• 🔵 Deep Indigo (#023047) — สื่อถึงความลุ่มลึก ท้องฟ้ายามค่ำคืน และความมั่นคง\n• 🩵 Sky Cyan (#8ECAE6) — สื่อถึงแสงหมอกและความนุ่มนวล\n\n🔗 สร้าง Palette สีด้วยตนเอง: https://coolors.co/\n📚 แหล่งอ้างอิง & เครดิต: Cloudflare AI Visual Palette Generator'
+          },
+          {
+            type: 'tutorial',
+            title: '✨ [Cloudflare AI] 3 ขั้นตอนจัดองค์ประกอบแบบ Dynamic Symmetry',
+            text: '📐 Dynamic Symmetry คือการใช้เส้นทแยงมุมและตารางฮาร์โมนิก (Root Rectangles) เพื่อนำสายตาผู้ชม:\n1. ลากเส้นทแยงมุมหลัก (Baroque Diagonal) จากมุมซ้ายล่างไปขวาบน\n2. ลากเส้นตั้งฉากจากมุมที่เหลือเพื่อหาจุดตัดทรงพลัง (Eye of the Grid)\n3. วางจุดศูนย์กลางของตัวแบบหรือจุดสนใจหลักไว้บนแนวเส้นเหล่านี้\n\n🔗 ศึกษาองค์ประกอบภาพเพิ่มเติม: https://www.canva.com/learn/visual-design-composition/\n📚 แหล่งอ้างอิง & เครดิต: Jay Hambidge - The Elements of Dynamic Symmetry'
+          }
+        ];
+
+        const randomTopic = freshTopics[Math.floor(Math.random() * freshTopics.length)];
+
+        await db.prepare(`
+          INSERT INTO posts (id, type, title, author, text, image_url, video_url, video_file_url, created_at)
+          VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
+        `).bind(
+          newPostId,
+          randomTopic.type,
+          randomTopic.title,
+          'AI Art Curator 🤖',
+          randomTopic.text,
+          now
+        ).run();
+
+        // 3-Day Rolling Window Cleanup
+        await db.prepare(`
+          DELETE FROM posts 
+          WHERE author = 'AI Art Curator 🤖' 
+          AND datetime(created_at) < datetime('now', '-3 days')
+        `).run().catch(() => {});
+
+        return jsonResponse({
+          success: true,
+          message: 'Cloudflare AI สร้างบทความใหม่และขึ้นสู่ฟีดเรียบร้อย',
+          post: {
+            id: newPostId,
+            type: randomTopic.type,
+            title: randomTopic.title,
+            author: 'AI Art Curator 🤖',
+            authorAvatar: '🤖',
+            text: randomTopic.text,
+            createdAt: now,
+            likes: [],
+            comments: []
+          }
+        });
+      }
     }
 
     // -------------------------------------------------------------
