@@ -496,8 +496,28 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, message: 'ลบโพสต์เรียบร้อย' });
       }
 
-      // GET /api/posts — List all posts
+      // GET /api/posts — List all posts & Autonomous AI Curator Maintenance
       if (path.length === 1 && method === 'GET') {
+        // 1. Maintenance: ลบโพสต์ AI ที่เก่ากว่า 3 วันออกอัตโนมัติ (3-Day Rolling Window)
+        await db.prepare(`
+          DELETE FROM posts 
+          WHERE author = 'AI Art Curator 🤖' 
+          AND datetime(created_at) < datetime('now', '-3 days')
+        `).run().catch(() => {});
+
+        // 2. ตรวจสอบว่าวันนี้มีโพสต์ของ AI Art Curator แล้วหรือยัง
+        const todayAi = await db.prepare(`
+          SELECT count(*) as count 
+          FROM posts 
+          WHERE author = 'AI Art Curator 🤖' 
+          AND date(created_at) = date('now')
+        `).first().catch(() => ({ count: 0 }));
+
+        if (!todayAi || todayAi.count === 0) {
+          // หากยังไม่มี ให้ระบบสร้างเนื้อหาใหม่ประจำวัน 2 โพสต์ทันที
+          await seedDailyAiCuratorPosts(db, env).catch(() => {});
+        }
+
         const postsResult = await db.prepare('SELECT * FROM posts ORDER BY created_at DESC').all();
         const posts = postsResult.results || [];
         const likesResult = await db.prepare('SELECT * FROM post_likes').all().catch(() => ({ results: [] }));
@@ -970,5 +990,79 @@ export async function onRequest(context) {
     return errorResponse('Route not found', 404);
   } catch (err) {
     return errorResponse('Internal Server Error: ' + err.message, 500);
+  }
+}
+
+/**
+ * ฟังก์ชันสร้างบทเรียน Digital Art อัตโนมัติประจำวัน (Cloudflare AI & Smart Knowledge Bank)
+ * ผลิตบทความวันละ 2 โพสต์ พร้อมลิงก์ศึกษาต่อและแหล่งอ้างอิงวิชาการ
+ */
+async function seedDailyAiCuratorPosts(db, env) {
+  const MS_PER_DAY = 86400000;
+  const now = new Date();
+  const currentEpochDay = Math.floor(now.getTime() / MS_PER_DAY);
+
+  const curatedTopics = [
+    {
+      type: 'inspiration',
+      title: '🎨 ทฤษฎีสี 60-30-10: เคล็ดลับคุมโทนให้งาน Digital Art ดูโปร',
+      text: 'การใช้สีในงานศิลปะดิจิทัลให้ลงตัว ลองใช้สูตร 60-30-10:\n• 60% สีหลัก (Dominant Color) เช่น สีพื้นหลังหรือบรรยากาศโดยรวม\n• 30% สีรอง (Secondary Color) เช่น ตัวละครหรือองค์ประกอบหลัก\n• 10% สีไฮไลต์ (Accent Color) สีที่ตัดกันเพื่อดึงดูดสายตาไปยังจุดเด่น\n\n🔗 ศึกษาเครื่องมือสร้าง Palette สีเพิ่มเติม: https://coolors.co/ และ https://color.adobe.com/\n📚 แหล่งอ้างอิง & เครดิต: Interaction Design Foundation & Adobe Design Principles'
+    },
+    {
+      type: 'tutorial',
+      title: '💡 3 Blending Modes ใน Photoshop ที่สายกราฟิกต้องใช้เป็นประจำ',
+      text: 'โหมดผสมเลเยอร์ (Layer Blending Modes) สำคัญ 3 กลุ่มที่ต้องใช้งานบ่อยที่สุด:\n1. Multiply (Darken): ตัดสีขาวออก เหมาะสำหรับลงเงามืดและคัดลอกเส้นหมึก\n2. Screen (Lighten): ตัดสีดำออก เหมาะสำหรับสร้างเอฟเฟกต์แสง แสงนีออน และประกายไฟ\n3. Overlay (Contrast): เพิ่มมิติความเปรียบต่างของแสงเงาและเคลือบ Texture ให้กลมกลืน\n\n🔗 ทดลองฝึกใช้งานฟรีบนเว็บ: https://www.photopea.com/\n📚 แหล่งอ้างอิง & เครดิต: Adobe Photoshop User Guide - Blending Modes'
+    },
+    {
+      type: 'inspiration',
+      title: '🌟 เทคนิค Rim Light: สร้างแสงขอบให้ตัวละครลอยเด่นจากฉากหลัง',
+      text: 'Rim Light หรือ Kicker Light คือแสงที่ส่องมาจากด้านหลังของตัวแบบ (Backlight) ทำให้เกิดเส้นขอบสว่างรอบตัวละคร\n\n✨ ประโยชน์:\n• แยกตัวละครออกจากพื้นหลังที่มืด\n• เพิ่มความเท่ สไตล์ภาพยนตร์ไซไฟ/แฟนตาซี\n• วิธีทำ: ใช้เลเยอร์โหมด Color Dodge หรือ Linear Dodge วาดขอบแสงตามทิศทางของแสงด้านหลัง\n\n🔗 บทเรียนพื้นฐานเรื่องแสงเงา: https://www.ctrlpaint.com/\n📚 แหล่งอ้างอิง & เครดิต: James Gurney - Color and Light: A Guide for the Realist Painter'
+    },
+    {
+      type: 'tutorial',
+      title: '🤖 Prompt Engineering: สูตรสั่ง AI สร้างภาพแนว Cyberpunk & Concept Art',
+      text: 'แจกสูตรโครงสร้าง 4 ส่วนในการสั่ง AI สร้างภาพศิลปะแนว Concept Art:\n1. Subject: กำหนดสิ่งของ/สถานที่หลัก\n2. Art Style: เช่น Concept Art, Matte Painting\n3. Lighting: เช่น Dramatic Rim Lighting, Glowing Neon\n4. Engine / Quality: เช่น Unreal Engine 5, 8k Octane Render\n\n🔗 เครื่องมือทดลองสร้างภาพ AI ฟรี: https://firefly.adobe.com/ และ https://www.bing.com/create\n📚 แหล่งอ้างอิง & เครดิต: OpenAI DALL-E & Midjourney Prompt Documentation'
+    },
+    {
+      type: 'tutorial',
+      title: '📐 Rule of Thirds (กฎสามส่วน) ในการจัดองค์ประกอบภาพศิลปะ',
+      text: 'แบ่งพื้นที่ภาพเป็นตาราง 3x3 แล้ววางตำแหน่งตัวละคร จุดสนใจ หรือดวงตาไว้ที่ "จุดตัดเก้าช่อง"\n\nข้อดี:\n• ทำให้ภาพดูมีชีวิตชีวาและมีการเคลื่อนไหว (Dynamic)\n• มีพื้นที่ว่าง (Negative Space) ให้นำสายตาและสร้างเรื่องราวได้อย่างสมดุล\n\n🔗 ศึกษาทฤษฎีการจัดองค์ประกอบศิลป์: https://www.canva.com/learn/visual-design-composition/\n📚 แหล่งอ้างอิง & เครดิต: John Thomas Smith (1797) - Remarks on Rural Scenery'
+    },
+    {
+      type: 'inspiration',
+      title: '📐 สัดส่วนทองคำ (Golden Ratio 1:1.618) เคล็ดลับความงามระดับ Masterpiece',
+      text: 'Golden Ratio (1:1.618 หรือ Fibonacci Spiral) คืออัตราส่วนทางคณิตศาสตร์ที่พบในธรรมชาติและงานศิลปะระดับโลก\n\n✨ วิธีนำไปใช้:\n• วางจุดโฟกัสสำคัญของภาพไว้ที่จุดหมุนของก้นหอย Fibonacci\n• กำหนดอัตราส่วนพื้นที่หลัก 61.8% ต่อพื้นที่รอง 38.2%\n\n🔗 ศึกษา Golden Ratio Generator: https://www.goldennumber.net/\n📚 แหล่งอ้างอิง & เครดิต: Mario Livio (2002) - The Golden Ratio & Smashing Magazine'
+    },
+    {
+      type: 'tutorial',
+      title: '🌟 ระบบจัดแสง 3 ทิศทาง (Three-Point Lighting) สำหรับงาน 2D และ 3D',
+      text: 'มาตรฐานการจัดแสงระดับสตูดิโอภาพยนตร์:\n1. Key Light (ไฟหลัก 100%): ส่องทำมุม 45 องศา กำหนดแสงเงาหลัก\n2. Fill Light (ไฟลบเงา 50%): ส่องจากฝั่งตรงข้ามเพื่อเปิดรายละเอียดในเงามืด\n3. Back Light (ไฟขอบ): ส่องจากด้านหลังเพื่อแยกตัวละครออกจากฉากหลัง\n\n🔗 บทเรียนการจัดแสง 3D/2D: https://www.blender.org/support/tutorials/\n📚 แหล่งอ้างอิง & เครดิต: Gerald Millerson - Lighting for Television and Film'
+    },
+    {
+      type: 'inspiration',
+      title: '🎨 จิตวิทยาสี (Color Psychology): การเลือกโทนสีเพื่อสื่อสารอารมณ์',
+      text: 'สีสามารถกระตุ้นความรู้สึกของผู้ชมได้ทันที:\n• 🔴 สีแดง: พลัง ความเร่าร้อน อันตราย ความรัก\n• 🔵 สีน้ำเงิน: ความสงบ ความน่าเชื่อถือ ความเป็นมืออาชีพ ไซไฟ\n• 🟢 สีเขียว: ธรรมชาติ การเติบโต ความปลอดภัย\n• 🟣 สีม่วง: ความลึกลับ เวทมนตร์ ความหรูหรา\n\n🔗 คู่มือจิตวิทยาสี: https://www.interaction-design.org/literature/topics/color-theory\n📚 แหล่งอ้างอิง & เครดิต: Johann Wolfgang von Goethe - Theory of Colours'
+    }
+  ];
+
+  const totalTopics = curatedTopics.length;
+  const baseIdx = Math.abs((currentEpochDay * 2) % totalTopics);
+
+  for (let i = 0; i < 2; i++) {
+    const topic = curatedTopics[(baseIdx + i) % totalTopics];
+    const postId = `post_ai_daily_${currentEpochDay}_${i}`;
+    const createdAt = new Date(now.getTime() - (1 - i) * 60000).toISOString();
+
+    await db.prepare(`
+      INSERT OR IGNORE INTO posts (id, type, title, author, text, image_url, video_url, video_file_url, created_at)
+      VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
+    `).bind(
+      postId,
+      topic.type,
+      topic.title,
+      'AI Art Curator 🤖',
+      topic.text,
+      createdAt
+    ).run().catch(() => {});
   }
 }
