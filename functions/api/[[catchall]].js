@@ -610,6 +610,58 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, assignments: enrichedAssignments });
       }
 
+      // PUT /api/assignments/:id — Edit Assignment
+      if (path.length >= 2 && method === 'PUT') {
+        const id = path[1];
+        const body = await request.json().catch(() => null);
+        if (!body || !body.title) return errorResponse('กรุณาระบุชื่อใบงาน');
+
+        const existing = await db.prepare('SELECT * FROM assignments WHERE id = ?').bind(id).first().catch(() => null);
+        if (!existing) return errorResponse('ไม่พบใบงานนี้', 404);
+
+        const attachment = body.attachment !== undefined ? body.attachment : (existing.attachment_url ? { name: existing.attachment_name, dataUrl: existing.attachment_url, type: existing.attachment_type } : null);
+
+        await db.prepare(`
+          UPDATE assignments
+          SET title = ?, subject = ?, description = ?, instructions = ?, due_date = ?, max_score = ?, attachment_name = ?, attachment_url = ?, attachment_type = ?
+          WHERE id = ?
+        `).bind(
+          body.title.trim(),
+          body.subject !== undefined ? body.subject.trim() : existing.subject,
+          body.description !== undefined ? body.description.trim() : existing.description,
+          body.instructions !== undefined ? body.instructions.trim() : existing.instructions,
+          body.dueDate || existing.due_date,
+          body.maxScore !== undefined ? Number(body.maxScore) : existing.max_score,
+          attachment?.name || null,
+          attachment?.dataUrl || null,
+          attachment?.type || null,
+          id
+        ).run();
+
+        if (Array.isArray(body.exampleImages)) {
+          await db.prepare('DELETE FROM assignment_examples WHERE assignment_id = ?').bind(id).run().catch(() => {});
+          for (let i = 0; i < body.exampleImages.length; i++) {
+            const ex = body.exampleImages[i];
+            const exId = ex.id || ('ex_' + id + '_' + i + '_' + Date.now().toString(36));
+            await db.prepare(`
+              INSERT INTO assignment_examples (id, assignment_id, name, image_url, type)
+              VALUES (?, ?, ?, ?, ?)
+            `).bind(exId, id, ex.name || ('ตัวอย่าง ' + (i + 1)), ex.dataUrl || ex.url, ex.type || 'image/png').run();
+          }
+        }
+
+        return jsonResponse({ success: true, message: 'แก้ไขใบงานสำเร็จ' });
+      }
+
+      // DELETE /api/assignments/:id — Delete Assignment
+      if (path.length >= 2 && method === 'DELETE') {
+        const id = path[1];
+        await db.prepare('DELETE FROM assignment_examples WHERE assignment_id = ?').bind(id).run().catch(() => {});
+        await db.prepare('DELETE FROM submissions WHERE assignment_id = ?').bind(id).run().catch(() => {});
+        await db.prepare('DELETE FROM assignments WHERE id = ?').bind(id).run();
+        return jsonResponse({ success: true, message: 'ลบใบงานเรียบร้อย' });
+      }
+
       // POST /api/assignments
       if (path.length === 1 && method === 'POST') {
         const body = await request.json().catch(() => null);

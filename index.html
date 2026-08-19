@@ -293,7 +293,7 @@
         <div class="field"><label>วิชา</label><input class="input" id="asSubject" placeholder="เช่น คอมพิวเตอร์กราฟิก"></div>
         <div class="field"><label>คะแนนเต็ม</label><input class="input" id="asScore" type="number" min="1" max="100" value="10"></div>
       </div>
-      <div class="field"><label>กำหนดส่ง</label><input class="input" id="asDue" type="datetime-local"></div>
+      <div class="field"><label>กำหนดส่ง (วันที่)</label><input class="input" id="asDue" type="date"></div>
       <div class="field"><label>รายละเอียดงาน</label><textarea class="textarea" id="asDesc" placeholder="อธิบายงานโดยรวม..."></textarea></div>
       <div class="field"><label>ขั้นตอน / ข้อกำหนดในการทำ</label><textarea class="textarea" id="asInstr" placeholder="1) ...&#10;2) ..."></textarea></div>
       <div class="field"><label>ไฟล์แนบ (ใบงาน/เอกสาร, ไม่บังคับ)</label>
@@ -313,6 +313,43 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('assignModal')">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveAssignment()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>สร้างใบงาน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Assignment -->
+<div class="overlay" id="editAssignModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>✏️ แก้ไขใบงาน</h3>
+      <button class="icon-btn" onclick="closeModal('editAssignModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editAsId">
+      <div class="field"><label>ชื่อใบงาน / งาน *</label><input class="input" id="editAsTitle" placeholder="เช่น ออกแบบโปสเตอร์แนะนำตัวเอง"></div>
+      <div class="row">
+        <div class="field"><label>วิชา</label><input class="input" id="editAsSubject" placeholder="เช่น คอมพิวเตอร์กราฟิก"></div>
+        <div class="field"><label>คะแนนเต็ม</label><input class="input" id="editAsScore" type="number" min="1" max="100" value="10"></div>
+      </div>
+      <div class="field"><label>กำหนดส่ง (วันที่)</label><input class="input" id="editAsDue" type="date"></div>
+      <div class="field"><label>รายละเอียดงาน</label><textarea class="textarea" id="editAsDesc" placeholder="อธิบายงานโดยรวม..."></textarea></div>
+      <div class="field"><label>ขั้นตอน / ข้อกำหนดในการทำ</label><textarea class="textarea" id="editAsInstr" placeholder="1) ...&#10;2) ..."></textarea></div>
+      <div class="field"><label>เปลี่ยนไฟล์แนบ (ไม่เลือก = ใช้ไฟล์เดิม)</label>
+        <div class="file-drop" id="editAsFileDrop" onclick="document.getElementById('editAsFile').click()">
+          <span id="editAsFileLabel">คลิกเพื่อแนบไฟล์ใหม่</span>
+        </div>
+        <input type="file" id="editAsFile" style="display:none" onchange="onPickFile(this,'editAsFileLabel')">
+      </div>
+      <div class="field"><label>เปลี่ยนภาพตัวอย่างงาน (ไม่เลือก = ใช้รูปเดิม)</label>
+        <div class="file-drop" id="editAsExImgsDrop" onclick="document.getElementById('editAsExImgs').click()">
+          <span id="editAsExImgsLabel">คลิกเพื่อเลือกรูปภาพตัวอย่างใหม่</span>
+        </div>
+        <input type="file" id="editAsExImgs" accept="image/*" multiple style="display:none" onchange="onPickMultipleFiles(this,'editAsExImgsLabel',5)">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('editAssignModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEditAssignment()">บันทึกการแก้ไข</button>
     </div>
   </div>
 </div>

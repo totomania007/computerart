@@ -466,6 +466,52 @@ const API = {
     return true;
   },
 
+  async updateAssignment(id, assignData) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/assignments/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(assignData)
+        });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+          return true;
+        }
+      } catch (e) {
+        console.warn('Update assignment fallback to local:', e);
+      }
+    }
+    const idx = data.assignments.findIndex(a => a.id === id);
+    if (idx >= 0) {
+      data.assignments[idx] = { ...data.assignments[idx], ...assignData };
+      save();
+      await this.syncAll();
+      return true;
+    }
+    return false;
+  },
+
+  async deleteAssignment(id) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/assignments/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+          return true;
+        }
+      } catch (e) {
+        console.warn('Delete assignment fallback to local:', e);
+      }
+    }
+    data.assignments = data.assignments.filter(a => a.id !== id);
+    save();
+    await this.syncAll();
+    return true;
+  },
+
   // -------------------------------------------------------------
   // Submissions & Grading
   // -------------------------------------------------------------

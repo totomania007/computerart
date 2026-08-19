@@ -207,8 +207,7 @@ function clearAssignForm(){
 function openAssignModal(){
   clearAssignForm();
   const due = new Date(Date.now()+7*86400000);
-  const pad = n=>String(n).padStart(2,'0');
-  document.getElementById('asDue').value = due.getFullYear()+'-'+pad(due.getMonth()+1)+'-'+pad(due.getDate())+'T'+pad(due.getHours())+':'+pad(due.getMinutes());
+  document.getElementById('asDue').value = due.toISOString().slice(0, 10);
   openModal('assignModal');
 }
 
@@ -248,7 +247,7 @@ async function saveAssignment(){
       subject,
       description: desc,
       instructions: instr,
-      dueDate: due ? new Date(due).toISOString() : null,
+      dueDate: due || null,
       maxScore: Math.min(100, Math.max(1, score)),
       attachment,
       exampleImages,
@@ -264,6 +263,126 @@ async function saveAssignment(){
   } catch (err) {
     console.error(err);
     toast('❌ เกิดข้อผิดพลาดในการสร้างใบงาน');
+  }
+}
+
+/* ---------- แก้ไขใบงาน ---------- */
+let pendingEditAs = { id: null, attachment: null, exampleImages: [] };
+
+function openEditAssignModal(id){
+  const a = data.assignments.find(x => x.id === id);
+  if(!a) return;
+
+  pendingEditAs = {
+    id: a.id,
+    attachment: a.attachment || null,
+    exampleImages: a.exampleImages || []
+  };
+
+  document.getElementById('editAsId').value = a.id;
+  document.getElementById('editAsTitle').value = a.title || '';
+  document.getElementById('editAsSubject').value = a.subject || '';
+  document.getElementById('editAsScore').value = a.maxScore || 10;
+  
+  // Format due date as YYYY-MM-DD
+  let dueDateStr = '';
+  if (a.dueDate) {
+    try {
+      dueDateStr = a.dueDate.includes('T') ? a.dueDate.split('T')[0] : a.dueDate;
+    } catch (_) {
+      dueDateStr = a.dueDate;
+    }
+  }
+  document.getElementById('editAsDue').value = dueDateStr;
+  document.getElementById('editAsDesc').value = a.description || '';
+  document.getElementById('editAsInstr').value = a.instructions || '';
+
+  const fLabel = document.getElementById('editAsFileLabel');
+  if (a.attachment) {
+    fLabel.textContent = `มีไฟล์เดิม: ${a.attachment.name} (เลือกใหม่เพื่อเปลี่ยน)`;
+    fLabel.parentElement.classList.add('has-file');
+  } else {
+    fLabel.textContent = 'คลิกเพื่อแนบไฟล์ใหม่';
+    fLabel.parentElement.classList.remove('has-file');
+  }
+
+  const exLabel = document.getElementById('editAsExImgsLabel');
+  if (a.exampleImages && a.exampleImages.length) {
+    exLabel.textContent = `มีภาพตัวอย่างเดิม ${a.exampleImages.length} รูป (เลือกใหม่เพื่อแทนที่)`;
+    exLabel.parentElement.classList.add('has-file');
+  } else {
+    exLabel.textContent = 'คลิกเพื่อเลือกรูปภาพตัวอย่างใหม่';
+    exLabel.parentElement.classList.remove('has-file');
+  }
+
+  openModal('editAssignModal');
+}
+
+async function saveEditAssignment(){
+  const id = document.getElementById('editAsId').value;
+  const a = data.assignments.find(x => x.id === id);
+  if(!a) return;
+
+  const title = document.getElementById('editAsTitle').value.trim();
+  if(!title){ toast('กรุณาใส่ชื่อใบงาน'); return; }
+  const subject = document.getElementById('editAsSubject').value.trim();
+  const score = parseInt(document.getElementById('editAsScore').value, 10) || 10;
+  const due = document.getElementById('editAsDue').value;
+  const desc = document.getElementById('editAsDesc').value.trim();
+  const instr = document.getElementById('editAsInstr').value.trim();
+  const fInput = document.getElementById('editAsFile');
+  const exImgsInput = document.getElementById('editAsExImgs');
+
+  try {
+    let attachment = pendingEditAs.attachment;
+    if (fInput.files && fInput.files[0]) {
+      const res = await uploadToCloudinary(fInput.files[0]);
+      if (res) attachment = { name: res.name, dataUrl: res.url, url: res.url, type: res.type };
+    }
+
+    let exampleImages = pendingEditAs.exampleImages;
+    if (exImgsInput.files && exImgsInput.files.length) {
+      exampleImages = [];
+      const limit = Math.min(exImgsInput.files.length, 5);
+      for (let i = 0; i < limit; i++) {
+        const file = exImgsInput.files[i];
+        const res = await uploadToCloudinary(file);
+        if (res) {
+          exampleImages.push({ name: res.name, dataUrl: res.url, url: res.url, type: res.type };
+        }
+      }
+    }
+
+    const updatedData = {
+      title,
+      subject,
+      description: desc,
+      instructions: instr,
+      dueDate: due || null,
+      maxScore: Math.min(100, Math.max(1, score)),
+      attachment,
+      exampleImages
+    };
+
+    toast('⏳ กำลังบันทึกการแก้ไขใบงาน...');
+    await API.updateAssignment(id, updatedData);
+    closeModal('editAssignModal');
+    showScreen('assignments');
+    toast('✏️ แก้ไขใบงานเรียบร้อย');
+  } catch (err) {
+    console.error(err);
+    toast('❌ เกิดข้อผิดพลาดในการแก้ไขใบงาน');
+  }
+}
+
+async function deleteAssignmentItem(id){
+  if(!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบใบงานนี้? (ข้อมูลการส่งงานทั้งหมดของใบงานนี้จะถูกลบด้วย)')) return;
+  toast('⏳ กำลังลบใบงาน...');
+  const ok = await API.deleteAssignment(id);
+  if(ok){
+    closeModal('detailModal');
+    toast('🗑️ ลบใบงานเรียบร้อย');
+    showScreen('assignments');
   }
 }
 

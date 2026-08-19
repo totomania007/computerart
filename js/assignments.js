@@ -71,12 +71,19 @@ function openDetail(id){
   const attUrl = a.attachment ? (a.attachment.dataUrl || a.attachment.url) : null;
   const att = attUrl ? '<a class="sub-file" onclick="openFile(\''+esc(attUrl)+'\',\''+esc(a.attachment.name)+'\')">'+ICONS.download+esc(a.attachment.name)+'</a>' : '';
 
+  let teacherControls = role === 'teacher' ? `
+    <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px; border-top:2px solid #000; padding-top:12px">
+      <button class="btn btn-soft" style="width:100%" onclick="closeModal('detailModal'); openEditAssignModal('${a.id}')">✏️ แก้ไขใบงาน</button>
+      <button class="btn btn-ghost" style="width:100%; color:#B91C1C" onclick="deleteAssignmentItem('${a.id}')">🗑️ ลบใบงาน</button>
+    </div>` : '';
+
   let side = '<div class="card card-pad"><h3 style="font-size:15px; margin-bottom:12px">รายละเอียด</h3><div class="info-list">'+
     '<div class="info-row">'+ICONS.clipboard+'<div><b>วิชา:</b> '+esc(a.subject||'—')+'</div></div>'+
-    '<div class="info-row">'+ICONS.clock+'<div><b>กำหนดส่ง:</b> '+fmtDate(a.dueDate)+'</div></div>'+
+    '<div class="info-row">'+ICONS.clock+'<div><b>กำหนดส่ง:</b> '+(a.dueDate ? fmtDateShort(a.dueDate) : 'ไม่มีกำหนด')+'</div></div>'+
     '<div class="info-row">'+ICONS.star+'<div><b>คะแนนเต็ม:</b> '+a.maxScore+' คะแนน</div></div>'+
     '<div class="info-row">'+ICONS.check+'<div><b>สถานะ:</b> '+st.label+'</div></div>'+
     (att ? '<div class="info-row">'+ICONS.file+'<div><b>ไฟล์แนบ:</b><br>'+att+'</div></div>' : '')+
+    teacherControls+
     '</div></div>';
 
   let main = '<div class="card card-pad" style="margin-bottom:16px">'+
