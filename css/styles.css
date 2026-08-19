@@ -456,6 +456,109 @@ footer{max-width:1080px; margin:0 auto; padding:10px 16px 30px; display:flex; ga
 
 .pin-display{font-size:24px; letter-spacing:12px; text-align:center; font-weight:bold}
 
+/* ---------- Toolkit Bar ---------- */
+.toolkit-bar {
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 #000;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.toolkit-head {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.toolkit-items {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.tool-chip {
+  background: var(--muted);
+  border: 1.5px solid #000;
+  border-radius: 2px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #000;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: transform .08s, background .08s, box-shadow .08s;
+  box-shadow: 1.5px 1.5px 0 #000;
+}
+.tool-chip:hover {
+  background: var(--yellow);
+  transform: translate(-1px, -1px);
+  box-shadow: 2.5px 2.5px 0 #000;
+}
+.tool-chip:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0 0 0 #000;
+}
+
+/* ---------- Showcase / Exhibition ---------- */
+.showcase-grid {
+  align-items: start;
+}
+.showcase-card {
+  transition: transform .08s, box-shadow .08s;
+}
+.showcase-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hover);
+}
+.showcase-cover {
+  position: relative;
+  border: 2px solid #000;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  margin: 10px 0;
+  background: #000;
+  max-height: 280px;
+}
+.showcase-cover img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+  transition: transform .2s ease;
+}
+.showcase-cover:hover img {
+  transform: scale(1.03);
+}
+.showcase-count-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,.85);
+  color: #fff;
+  border: 1.5px solid #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+.showcase-comment {
+  margin-top: 10px;
+  background: #FEF3C7;
+  border: 1.5px solid #000;
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #78350F;
+}
+
 /* ---------- Mobile Responsive Styles ---------- */
 @media (max-width: 680px) {
   .header-in {

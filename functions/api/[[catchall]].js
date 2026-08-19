@@ -628,6 +628,7 @@ export async function onRequest(context) {
             score: s.score,
             comment: s.comment || '',
             status: s.status || 'pending',
+            isFeatured: Boolean(s.is_featured),
             gradedAt: s.graded_at
           });
         }
@@ -754,11 +755,29 @@ export async function onRequest(context) {
         const status = body.status || (score !== null ? 'graded' : 'pending');
         const gradedAt = new Date().toISOString();
 
-        await db.prepare(`
-          UPDATE submissions
-          SET score = ?, comment = ?, status = ?, graded_at = ?
-          WHERE id = ?
-        `).bind(score, comment, status, gradedAt, subId).run();
+        const isFeatured = body.isFeatured !== undefined ? (body.isFeatured ? 1 : 0) : null;
+
+        if (isFeatured !== null) {
+          try {
+            await db.prepare(`
+              UPDATE submissions
+              SET score = ?, comment = ?, status = ?, graded_at = ?, is_featured = ?
+              WHERE id = ?
+            `).bind(score, comment, status, gradedAt, isFeatured, subId).run();
+          } catch (_) {
+            await db.prepare(`
+              UPDATE submissions
+              SET score = ?, comment = ?, status = ?, graded_at = ?
+              WHERE id = ?
+            `).bind(score, comment, status, gradedAt, subId).run();
+          }
+        } else {
+          await db.prepare(`
+            UPDATE submissions
+            SET score = ?, comment = ?, status = ?, graded_at = ?
+            WHERE id = ?
+          `).bind(score, comment, status, gradedAt, subId).run();
+        }
 
         return jsonResponse({ success: true, message: 'บันทึกคะแนนสำเร็จ' });
       }

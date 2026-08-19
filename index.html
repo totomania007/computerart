@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4F46E5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ClassworkHub">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -46,6 +51,13 @@
     <div class="page-sub">ตรวจสอบคะแนนและคำติชมจากคุณครู</div>
     <div id="resultsStats"></div>
     <div id="resultsList"></div>
+  </section>
+
+  <!-- Showcase / Exhibition -->
+  <section class="screen" id="screen-showcase">
+    <div class="page-title">🌟 นิทรรศการผลงานเด่น</div>
+    <div class="page-sub">รวมผลงานสร้างสรรค์ยอดเยี่ยมจากเพื่อนๆ ในห้องเรียน</div>
+    <div id="showcaseGallery"></div>
   </section>
 
   <!-- Grading (teacher) -->
@@ -429,6 +441,7 @@
 <script src="js/assignments.js" defer></script>
 <script src="js/grading.js" defer></script>
 <script src="js/results.js" defer></script>
+<script src="js/showcase.js" defer></script>
 <script src="js/modals.js" defer></script>
 <script src="js/main.js" defer></script>
 </body>

@@ -9,13 +9,16 @@ function renderFeed(){
   const teacherBar = '<div id="feedAddBtns" style="display:flex; justify-content:flex-end; margin-bottom:14px; gap:8px"></div>';
   let html = teacherBar;
 
-  // 1. ตรึงใบงานที่มอบหมายไว้บนสุดของฟีด (Pinned Assignments)
+  // 1. แถบเครื่องมือออกแบบและไอเดียสร้างสรรค์ (Creative Toolkit)
+  html += renderToolkitBar();
+
+  // 2. ตรึงใบงานที่มอบหมายไว้บนสุดของฟีด (Pinned Assignments)
   const pinnedHtml = renderPinnedAssignments();
   if (pinnedHtml) {
     html += pinnedHtml;
   }
 
-  // 2. รายการโพสต์ฟีดข่าวทั่วไป
+  // 3. รายการโพสต์ฟีดข่าวทั่วไป
   if(!data.posts.length && !pinnedHtml){
     html += '<div class="card empty"><p>ยังไม่มีโพสต์</p></div>';
   }else if(data.posts.length){
@@ -24,6 +27,25 @@ function renderFeed(){
   wrap.innerHTML = html;
   renderHeader();
   loadLinkPreviews();
+}
+
+function renderToolkitBar(){
+  return `
+    <div class="toolkit-bar">
+      <div class="toolkit-head">
+        <span>🎨</span> <span>เครื่องมือออกแบบและแรงบันดาลใจ:</span>
+      </div>
+      <div class="toolkit-items">
+        <a class="tool-chip" href="https://www.photopea.com/" target="_blank" rel="noopener">🖌️ Photopea</a>
+        <a class="tool-chip" href="https://www.remove.bg/" target="_blank" rel="noopener">✂️ Remove.bg</a>
+        <a class="tool-chip" href="https://coolors.co/" target="_blank" rel="noopener">🎨 Coolors</a>
+        <a class="tool-chip" href="https://www.pinterest.com/" target="_blank" rel="noopener">💡 Pinterest</a>
+        <a class="tool-chip" href="https://firefly.adobe.com/" target="_blank" rel="noopener">🤖 Adobe Firefly</a>
+        <a class="tool-chip" href="https://www.canva.com/" target="_blank" rel="noopener">📐 Canva</a>
+        <a class="tool-chip" href="https://fonts.google.com/" target="_blank" rel="noopener">🔤 Google Fonts</a>
+      </div>
+    </div>
+  `;
 }
 
 function renderPinnedAssignments(){

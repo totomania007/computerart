@@ -14,6 +14,7 @@ function renderHeader(){
   tabs.push({ id:'feed', label:'ฟีด', icon: ICONS.share });
   if(role === 'teacher') tabs.push({ id:'grading', label:'ตรวจงาน', icon: ICONS.clipboard });
   tabs.push({ id:'assignments', label:'ใบงาน', icon: ICONS.clipboard });
+  tabs.push({ id:'showcase', label:'นิทรรศการ', icon: ICONS.trophy });
   if(role === 'student') tabs.push({ id:'results', label:'ผลงานของฉัน', icon: ICONS.star });
   nav.innerHTML = tabs.map(t =>
     '<button class="nav-tab '+(currentScreen===t.id?'active':'')+'" data-screen="'+t.id+'" onclick="showScreen(\''+t.id+'\')">'+t.icon+'<span>'+t.label+'</span></button>'
@@ -126,6 +127,7 @@ async function saveApiSettings(){
 function render(){
   if(currentScreen === 'feed') renderFeed();
   else if(currentScreen === 'assignments') renderAssignments();
+  else if(currentScreen === 'showcase') renderShowcase();
   else if(currentScreen === 'results') renderResults();
   else if(currentScreen === 'grading') renderGrading();
 }
