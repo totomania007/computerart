@@ -266,6 +266,12 @@ export async function onRequest(context) {
           WHERE id = ?
         `).bind(newName, newPin, newAvatar, id).run();
 
+        if (newName !== existing.name) {
+          await db.prepare('UPDATE posts SET author = ? WHERE author = ? OR author = "คุณครู"').bind(newName, existing.name).run().catch(() => {});
+          await db.prepare('UPDATE post_likes SET user_name = ? WHERE user_name = ?').bind(newName, existing.name).run().catch(() => {});
+          await db.prepare('UPDATE post_comments SET name = ? WHERE name = ?').bind(newName, existing.name).run().catch(() => {});
+        }
+
         return jsonResponse({
           success: true,
           message: 'อัปเดตข้อมูลครูเรียบร้อย',
@@ -508,11 +514,14 @@ export async function onRequest(context) {
           });
         }
 
+        const teacherRow = await db.prepare('SELECT name FROM teachers ORDER BY created_at ASC').first().catch(() => null);
+        const currentTeacher = teacherRow?.name || 'คุณครู';
+
         const enrichedPosts = posts.map(p => ({
           id: p.id,
           type: p.type,
           title: p.title,
-          author: p.author,
+          author: (p.author === 'คุณครู' && currentTeacher !== 'คุณครู') ? currentTeacher : p.author,
           text: p.text,
           image: p.image_url,
           videoUrl: p.video_url,

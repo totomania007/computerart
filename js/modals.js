@@ -587,14 +587,17 @@ async function editTeacherPrompt(id, currentName, currentPin){
   toast('⏳ กำลังอัปเดตข้อมูลครู...');
   const ok = await API.updateTeacher(id, { name: newName.trim(), pin: newPin.trim() });
   if (ok) {
-    // If updating current teacher name
-    if (localStorage.getItem('cwh_teacher_name') === currentName || id === 'teacher_default') {
-      localStorage.setItem('cwh_teacher_name', newName.trim());
+    localStorage.setItem('cwh_teacher_name', newName.trim());
+    for (const p of data.posts) {
+      if (p.author === currentName || p.author === 'คุณครู') {
+        p.author = newName.trim();
+      }
     }
     toast('✅ อัปเดตข้อมูลครูเรียบร้อย');
+    await API.syncAll();
     await renderTeacherList();
     renderHeader();
-    render();
+    renderFeed();
   } else {
     toast('❌ ไม่สามารถอัปเดตได้');
   }
