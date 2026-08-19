@@ -605,20 +605,37 @@ export async function onRequest(context) {
 }`;
 
         try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-          const aiRes = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: 'application/json' }
-            }),
-            signal: AbortSignal.timeout(12000)
-          });
+          const candidateModels = ['gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-1.5-pro'];
+          let aiData = null;
+          let lastErrMsg = '';
 
-          const aiData = await aiRes.json();
-          if (!aiRes.ok) {
-            return errorResponse(aiData.error?.message || 'เกิดข้อผิดพลาดในการเรียก Gemini API', aiRes.status);
+          for (const modelName of candidateModels) {
+            try {
+              const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+              const aiRes = await fetch(geminiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: prompt }] }],
+                  generationConfig: { responseMimeType: 'application/json' }
+                }),
+                signal: AbortSignal.timeout(12000)
+              });
+
+              const resJson = await aiRes.json();
+              if (aiRes.ok && resJson.candidates?.[0]?.content?.parts?.[0]?.text) {
+                aiData = resJson;
+                break;
+              } else {
+                lastErrMsg = resJson.error?.message || `Model ${modelName} returned status ${aiRes.status}`;
+              }
+            } catch (e) {
+              lastErrMsg = e.message;
+            }
+          }
+
+          if (!aiData) {
+            return errorResponse(lastErrMsg || 'ไม่สามารถเรียกใช้งาน Gemini API ได้ (หากใช้บัญชีมหาวิทยาลัย แนะนำให้ลองใช้บัญชี Gmail ส่วนตัวสำหรับสร้าง Key ฟรี)', 400);
           }
 
           const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
