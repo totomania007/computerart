@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — modals.js
    ฟอร์มสร้าง/แก้ไขโพสต์ + สร้างใบงาน + จัดการรายชื่อนักศึกษา + ตั้งค่าครู
    ============================================================ */
@@ -10,16 +10,30 @@ let pendingAs = { attachment:null, exampleImages:[] };
 let currentTeacherSettingsTab = 'teachers';
 
 /* ---------- สร้างโพสต์ ---------- */
-function openPostModal(){
-  pendingPost = { image:null, videoFile:null };
+function clearPostForm(){
   document.getElementById('postType').value = 'example';
   document.getElementById('postTitle').value = '';
   document.getElementById('postText').value = '';
   document.getElementById('postVideoUrl').value = '';
-  document.getElementById('postImgLabel').textContent = 'คลิกเพื่อเลือกรูปภาพ';
-  document.getElementById('postImgLabel').parentElement.classList.remove('has-file');
-  document.getElementById('postVideoLabel').textContent = 'คลิกเพื่อเลือกไฟล์วิดีโอ';
-  document.getElementById('postVideoLabel').parentElement.classList.remove('has-file');
+  const imgInput = document.getElementById('postImg');
+  if(imgInput) imgInput.value = '';
+  const vidInput = document.getElementById('postVideoFile');
+  if(vidInput) vidInput.value = '';
+  const imgLabel = document.getElementById('postImgLabel');
+  if(imgLabel) {
+    imgLabel.textContent = 'คลิกเพื่อเลือกรูปภาพ';
+    imgLabel.parentElement.classList.remove('has-file');
+  }
+  const vidLabel = document.getElementById('postVideoLabel');
+  if(vidLabel) {
+    vidLabel.textContent = 'คลิกเพื่อเลือกไฟล์วิดีโอ';
+    vidLabel.parentElement.classList.remove('has-file');
+  }
+  pendingPost = { image:null, videoFile:null };
+}
+
+function openPostModal(){
+  clearPostForm();
   openModal('postModal');
 }
 
@@ -85,6 +99,7 @@ async function savePost(){
     };
 
     await API.createPost(newPost);
+    clearPostForm();
     closeModal('postModal');
     showScreen('feed');
     toast('📢 สร้างโพสต์สำเร็จ');
@@ -166,21 +181,34 @@ async function saveEditPost(){
 }
 
 /* ---------- สร้างใบงาน ---------- */
-function openAssignModal(){
-  pendingAs = { attachment:null, exampleImages:[] };
-  const due = new Date(Date.now()+7*86400000);
-  const pad = n=>String(n).padStart(2,'0');
-  document.getElementById('asDue').value = due.getFullYear()+'-'+pad(due.getMonth()+1)+'-'+pad(due.getDate())+'T'+pad(due.getHours())+':'+pad(due.getMinutes());
+function clearAssignForm(){
   document.getElementById('asTitle').value='';
   document.getElementById('asSubject').value='';
   document.getElementById('asScore').value='10';
   document.getElementById('asDesc').value='';
   document.getElementById('asInstr').value='';
-  document.getElementById('asFileLabel').textContent='คลิกเพื่อแนบไฟล์ (PDF, รูปภาพ, เอกสาร)';
-  document.getElementById('asFileLabel').parentElement.classList.remove('has-file');
-  document.getElementById('asExImgsLabel').textContent='คลิกเพื่อเลือกรูปภาพตัวอย่าง';
-  document.getElementById('asExImgsLabel').parentElement.classList.remove('has-file');
-  document.getElementById('asExImgs').value='';
+  const fInput = document.getElementById('asFile');
+  if(fInput) fInput.value = '';
+  const exImgs = document.getElementById('asExImgs');
+  if(exImgs) exImgs.value = '';
+  const fLabel = document.getElementById('asFileLabel');
+  if(fLabel) {
+    fLabel.textContent='คลิกเพื่อแนบไฟล์ (PDF, รูปภาพ, เอกสาร)';
+    fLabel.parentElement.classList.remove('has-file');
+  }
+  const exLabel = document.getElementById('asExImgsLabel');
+  if(exLabel) {
+    exLabel.textContent='คลิกเพื่อเลือกรูปภาพตัวอย่าง';
+    exLabel.parentElement.classList.remove('has-file');
+  }
+  pendingAs = { attachment:null, exampleImages:[] };
+}
+
+function openAssignModal(){
+  clearAssignForm();
+  const due = new Date(Date.now()+7*86400000);
+  const pad = n=>String(n).padStart(2,'0');
+  document.getElementById('asDue').value = due.getFullYear()+'-'+pad(due.getMonth()+1)+'-'+pad(due.getDate())+'T'+pad(due.getHours())+':'+pad(due.getMinutes());
   openModal('assignModal');
 }
 
@@ -229,6 +257,7 @@ async function saveAssignment(){
     };
 
     await API.createAssignment(newAssignment);
+    clearAssignForm();
     closeModal('assignModal');
     showScreen('assignments');
     toast('📋 สร้างใบงานสำเร็จ' + (exampleImages.length ? ' (+ ' + exampleImages.length + ' ภาพตัวอย่าง)' : ''));

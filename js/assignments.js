@@ -168,6 +168,12 @@ async function submitWork(){
     };
 
     await API.submitWork(subData);
+    const textEl = document.getElementById('subText');
+    if (textEl) textEl.value = '';
+    const linkEl = document.getElementById('subLink');
+    if (linkEl) linkEl.value = '';
+    const fileEl = document.getElementById('subFile');
+    if (fileEl) fileEl.value = '';
     closeModal('submitModal');
     toast('✅ ส่งงานเรียบร้อย');
     openDetail(a.id);
