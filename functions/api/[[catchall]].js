@@ -6,8 +6,11 @@
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json; charset=utf-8'
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Teacher-PIN',
+  'Content-Type': 'application/json; charset=utf-8',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Referrer-Policy': 'strict-origin-when-cross-origin'
 };
 
 function jsonResponse(data, status = 200) {
@@ -106,6 +109,10 @@ export async function onRequest(context) {
 
     try {
       const targetObj = new URL(targetUrl);
+      const hostname = targetObj.hostname.toLowerCase();
+      if (hostname === 'localhost' || hostname.endsWith('.local') || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.16.') || hostname.startsWith('169.254.')) {
+        return errorResponse('Invalid target host', 400);
+      }
       const domain = targetObj.hostname.replace(/^www\./, '');
       const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
@@ -214,15 +221,14 @@ export async function onRequest(context) {
     // Route: /api/teachers
     // -------------------------------------------------------------
     if (path[0] === 'teachers') {
-      // GET /api/teachers
+      // GET /api/teachers (Public: Omit sensitive PIN)
       if (path.length === 1 && method === 'GET') {
-        const result = await db.prepare('SELECT id, name, pin, avatar, created_at FROM teachers ORDER BY created_at ASC').all().catch(() => ({ results: [] }));
+        const result = await db.prepare('SELECT id, name, avatar, created_at FROM teachers ORDER BY created_at ASC').all().catch(() => ({ results: [] }));
         return jsonResponse({
           success: true,
           teachers: (result.results || []).map(t => ({
             id: t.id,
             name: t.name,
-            pin: t.pin,
             avatar: t.avatar || '👩‍🏫',
             createdAt: t.created_at
           }))
