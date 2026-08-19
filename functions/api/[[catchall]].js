@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cloudflare Pages Functions API Handler
  * Handles all /api/* routes with Cloudflare D1 Database binding 'DB'
  */
@@ -92,6 +92,85 @@ export async function onRequest(context) {
       studentCount: stuTest?.count || 0,
       teacherCount: tTest?.count || 0
     });
+  }
+
+  // -------------------------------------------------------------
+  // Route: /api/link-preview (GET) - Open Graph Link Scraper
+  // -------------------------------------------------------------
+  if (path[0] === 'link-preview' && method === 'GET') {
+    let targetUrl = url.searchParams.get('url');
+    if (!targetUrl) return errorResponse('Missing url parameter');
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl;
+    }
+
+    try {
+      const targetObj = new URL(targetUrl);
+      const domain = targetObj.hostname.replace(/^www\./, '');
+      const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+      const pageRes = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        },
+        signal: AbortSignal.timeout(4500)
+      }).catch(() => null);
+
+      if (!pageRes || !pageRes.ok) {
+        return jsonResponse({
+          success: true,
+          preview: {
+            url: targetUrl,
+            domain,
+            title: domain,
+            description: `เปิดเว็บไซต์ ${domain}`,
+            image: null,
+            favicon
+          }
+        });
+      }
+
+      const html = await pageRes.text();
+
+      const getMeta = (prop) => {
+        const match = html.match(new RegExp(`<meta[^>]+(?:property|name)=["'](?:og:|twitter:)?${prop}["'][^>]+content=["']([^"']+)["']`, 'i')) ||
+                      html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:|twitter:)?${prop}["']`, 'i'));
+        return match ? match[1] : null;
+      };
+
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const title = getMeta('title') || (titleMatch ? titleMatch[1].trim() : domain);
+      const description = getMeta('description') || `เปิดเว็บไซต์ ${domain}`;
+      let image = getMeta('image');
+
+      if (image && !image.startsWith('http')) {
+        try { image = new URL(image, targetUrl).href; } catch (_) {}
+      }
+
+      return jsonResponse({
+        success: true,
+        preview: {
+          url: targetUrl,
+          domain,
+          title,
+          description,
+          image,
+          favicon
+        }
+      });
+    } catch (e) {
+      return jsonResponse({
+        success: true,
+        preview: {
+          url: targetUrl,
+          domain: targetUrl,
+          title: targetUrl,
+          description: 'คลิกเพื่อเปิดเว็บไซต์',
+          image: null,
+          favicon: null
+        }
+      });
+    }
   }
 
   // Verify D1 Database Binding for other routes

@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — api.js
    จัดการข้อมูลแบบ Dual-mode (Cloudflare D1 API + LocalStorage Fallback)
    ============================================================ */
@@ -551,6 +551,49 @@ const API = {
       }
     }
     return false;
+  },
+
+  // -------------------------------------------------------------
+  // Link Preview / Open Graph Scraper
+  // -------------------------------------------------------------
+  async fetchLinkPreview(rawUrl) {
+    if (!rawUrl) return null;
+    if (window._linkPreviewCache && window._linkPreviewCache[rawUrl]) {
+      return window._linkPreviewCache[rawUrl];
+    }
+    window._linkPreviewCache = window._linkPreviewCache || {};
+
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/link-preview?url=${encodeURIComponent(rawUrl)}`);
+        const json = await res.json();
+        if (json.success && json.preview) {
+          window._linkPreviewCache[rawUrl] = json.preview;
+          return json.preview;
+        }
+      } catch (e) {
+        console.warn('Link preview fetch failed:', e);
+      }
+    }
+
+    try {
+      let u = rawUrl;
+      if (!u.match(/^https?:\/\//i)) u = 'https://' + u;
+      const parsed = new URL(u);
+      const domain = parsed.hostname.replace(/^www\./, '');
+      const fallback = {
+        url: u,
+        domain,
+        title: domain,
+        description: `เปิดเว็บไซต์ ${domain}`,
+        image: null,
+        favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+      };
+      window._linkPreviewCache[rawUrl] = fallback;
+      return fallback;
+    } catch (_) {
+      return null;
+    }
   },
 
   // -------------------------------------------------------------

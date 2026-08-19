@@ -22,6 +22,36 @@ function fmtDateShort(iso){
   catch(e){ return new Date(iso).toLocaleDateString(); }
 }
 
+/**
+ * แปลง URL ในข้อความให้เป็น Hyperlink ที่คลิกเปิดแท็บใหม่ได้
+ */
+function linkify(text) {
+  if (!text) return '';
+  const escaped = esc(text);
+  const urlRegex = /((https?:\/\/|www\.)[^\s<]+|(?:\b[a-zA-Z0-9-]+\.)+(?:com|org|net|io|co|th|app|dev|edu|gov|me|site|online|store|tech|art|design|ai)(?:\/[^\s<]*)?)/gi;
+
+  return escaped.replace(urlRegex, (match) => {
+    let href = match;
+    if (!href.match(/^https?:\/\//i)) {
+      href = 'https://' + href;
+    }
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="post-link" onclick="event.stopPropagation()">${match}</a>`;
+  });
+}
+
+/**
+ * ดึง URL แรกที่พบในข้อความ
+ */
+function extractFirstUrl(text) {
+  if (!text) return null;
+  const urlRegex = /((https?:\/\/|www\.)[^\s<]+|(?:\b[a-zA-Z0-9-]+\.)+(?:com|org|net|io|co|th|app|dev|edu|gov|me|site|online|store|tech|art|design|ai)(?:\/[^\s<]*)?)/i;
+  const m = text.match(urlRegex);
+  if (!m) return null;
+  let url = m[0];
+  if (!url.match(/^https?:\/\//i)) url = 'https://' + url;
+  return url;
+}
+
 /* ---------- Toast & Modal ---------- */
 function toast(msg){
   const el = document.getElementById('toast');

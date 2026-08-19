@@ -81,8 +81,8 @@ function openDetail(id){
 
   let main = '<div class="card card-pad" style="margin-bottom:16px">'+
     '<h3 style="font-size:15px; margin-bottom:8px">รายละเอียดงาน</h3>'+
-    '<p style="font-size:14px; line-height:1.7; margin-bottom:14px">'+esc(a.description||'')+'</p>'+
-    (a.instructions ? '<h3 style="font-size:14px; margin-bottom:6px">ขั้นตอน / ข้อกำหนด</h3><div style="font-size:14px; line-height:1.8; white-space:pre-wrap; background:var(--muted); border-radius:12px; padding:12px 14px">'+esc(a.instructions)+'</div>' : '')+
+    '<p style="font-size:14px; line-height:1.7; margin-bottom:14px">'+linkify(a.description||'')+'</p>'+
+    (a.instructions ? '<h3 style="font-size:14px; margin-bottom:6px">ขั้นตอน / ข้อกำหนด</h3><div style="font-size:14px; line-height:1.8; white-space:pre-wrap; background:var(--muted); border-radius:12px; padding:12px 14px">'+linkify(a.instructions)+'</div>' : '')+
     (a.exampleImages && a.exampleImages.length ?
       '<div style="margin-top:16px"><h3 style="font-size:14px; margin-bottom:10px">🖼️ ภาพตัวอย่างงาน</h3>'+
       '<div class="ex-img-grid">'+

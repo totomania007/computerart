@@ -1,6 +1,6 @@
 ﻿/* ============================================================
    Classwork Hub — feed.js
-   ฟีดสไตล์ Facebook: render โพสต์ + ถูกใจ + คอมเมนต์ + แชร์ + จัดการ/แก้ไข/ลบ
+   ฟีดสไตล์ Facebook: render โพสต์ + ถูกใจ + คอมเมนต์ + แชร์ + Hyperlink + Rich Link Preview
    ============================================================ */
 'use strict';
 
@@ -15,12 +15,14 @@ function renderFeed(){
   }
   wrap.innerHTML = html;
   renderHeader();
+  loadLinkPreviews();
 }
 
 function postCard(p){
   const meta = POST_META[p.type] || POST_META.announcement;
   const me = currentIdentity();
   const liked = me && p.likes && p.likes.includes(me);
+  
   const img = p.image ? '<div class="post-media"><img src="'+esc(p.image)+'" alt="'+esc(p.title)+'" style="cursor:pointer" onclick="openLightbox(\''+esc(p.image)+'\',\''+esc(p.title)+'\')"></div>' : '';
   let media = img;
   const embed = p.videoUrl ? ytEmbed(p.videoUrl) : null;
@@ -28,6 +30,13 @@ function postCard(p){
   if(p.videoFile) {
     const vUrl = p.videoFile.dataUrl || p.videoFile.url || p.videoFile;
     media += '<div class="post-media"><video controls src="'+esc(vUrl)+'"></video></div>';
+  }
+
+  // Detect external URL for Rich Link Preview
+  const detectedUrl = extractFirstUrl(p.text) || (p.videoUrl && !embed ? p.videoUrl : null);
+  let linkPreviewHtml = '';
+  if (detectedUrl && !p.image && !p.videoFile && !embed) {
+    linkPreviewHtml = `<div class="post-link-preview-box" id="link-preview-${p.id}" data-url="${esc(detectedUrl)}"></div>`;
   }
 
   const isTeacher = role === 'teacher';
@@ -45,7 +54,7 @@ function postCard(p){
           '<div class="comment-name">'+esc(c.name)+'</div>' +
           commentControls +
         '</div>' +
-        '<div class="comment-text" id="cmt-text-'+c.id+'">'+esc(c.text)+'</div>' +
+        '<div class="comment-text" id="cmt-text-'+c.id+'">'+linkify(c.text)+'</div>' +
       '</div></div>';
   }).join('');
 
@@ -61,8 +70,9 @@ function postCard(p){
       '<span class="chip '+meta.cls+'" style="margin-right:6px">'+meta.label+'</span>'+
       teacherPostActions +
     '</div>'+
-    '<div class="post-body"><div class="post-title">'+esc(p.title)+'</div>'+esc(p.text)+'</div>'+
+    '<div class="post-body"><div class="post-title">'+esc(p.title)+'</div>'+linkify(p.text)+'</div>'+
     media+
+    linkPreviewHtml+
     '<div class="post-actions">'+
       '<button class="'+(liked?'liked':'')+'" onclick="toggleLike(\''+p.id+'\')">'+(liked?ICONS.heartFill:ICONS.heart)+'ถูกใจ ('+(p.likes||[]).length+')</button>'+
       '<button onclick="focusComment(\''+p.id+'\')">'+ICONS.comment+'คอมเมนต์ ('+(p.comments||[]).length+')</button>'+
@@ -76,6 +86,39 @@ function postCard(p){
       '</div>'+
     '</div>'+
   '</article>';
+}
+
+/**
+ * ดึงข้อมูลตัวอย่างเว็บไซต์ (Open Graph Preview) แบบ Asynchronous
+ */
+async function loadLinkPreviews(){
+  const boxes = document.querySelectorAll('.post-link-preview-box[data-url]');
+  for(const box of boxes){
+    const url = box.getAttribute('data-url');
+    if(!url || box.dataset.loaded) continue;
+    box.dataset.loaded = 'true';
+
+    try {
+      const preview = await API.fetchLinkPreview(url);
+      if(!preview) continue;
+
+      const imgHtml = preview.image ? `<div class="link-preview-img"><img src="${esc(preview.image)}" alt="${esc(preview.title || '')}" loading="lazy"></div>` : '';
+      const favHtml = preview.favicon ? `<img src="${esc(preview.favicon)}" alt="" class="link-favicon">` : '';
+
+      box.innerHTML = `
+        <a href="${esc(preview.url)}" target="_blank" rel="noopener noreferrer" class="link-preview-card" onclick="event.stopPropagation()">
+          ${imgHtml}
+          <div class="link-preview-info">
+            <div class="link-preview-domain">${favHtml}<span>${esc(preview.domain || '')}</span></div>
+            <div class="link-preview-title">${esc(preview.title || preview.domain)}</div>
+            <div class="link-preview-desc">${esc(preview.description || '')}</div>
+          </div>
+        </a>
+      `;
+    } catch (e) {
+      console.warn('Load link preview error:', e);
+    }
+  }
 }
 
 async function toggleLike(postId){
