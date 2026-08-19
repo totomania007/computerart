@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — feed.js
    ฟีดสไตล์ Facebook: render โพสต์ + ถูกใจ + คอมเมนต์ + แชร์ + Hyperlink + Rich Link Preview
    ============================================================ */
@@ -8,14 +8,99 @@ function renderFeed(){
   const wrap = document.getElementById('feed');
   const teacherBar = '<div id="feedAddBtns" style="display:flex; justify-content:flex-end; margin-bottom:14px; gap:8px"></div>';
   let html = teacherBar;
-  if(!data.posts.length){
+
+  // 1. ตรึงใบงานที่มอบหมายไว้บนสุดของฟีด (Pinned Assignments)
+  const pinnedHtml = renderPinnedAssignments();
+  if (pinnedHtml) {
+    html += pinnedHtml;
+  }
+
+  // 2. รายการโพสต์ฟีดข่าวทั่วไป
+  if(!data.posts.length && !pinnedHtml){
     html += '<div class="card empty"><p>ยังไม่มีโพสต์</p></div>';
-  }else{
+  }else if(data.posts.length){
     html += data.posts.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(postCard).join('');
   }
   wrap.innerHTML = html;
   renderHeader();
   loadLinkPreviews();
+}
+
+function renderPinnedAssignments(){
+  const assignments = data.assignments || [];
+  if (!assignments.length) return '';
+
+  const sorted = assignments.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  let html = '<div class="pinned-assignments-wrap">';
+
+  sorted.forEach(a => {
+    let statusHtml = '';
+    let actionBtnHtml = '';
+
+    if (role === 'student') {
+      if (studentName) {
+        const sub = (a.submissions || []).find(s => s.studentName === studentName || (studentId && s.studentId === studentId));
+        if (sub) {
+          if (sub.status === 'graded' || sub.score !== null && sub.score !== undefined) {
+            statusHtml = `<span class="chip chip-green">${ICONS.check} ส่งแล้ว & ตรวจแล้ว (ได้ ${sub.score}/${a.maxScore} คะแนน)</span>`;
+            actionBtnHtml = `<button class="btn btn-soft" style="font-size:12.5px; padding:5px 12px" onclick="openDetail('${a.id}')">🌟 ดูผลคะแนน</button>`;
+          } else {
+            statusHtml = `<span class="chip chip-indigo">${ICONS.clock} ส่งงานแล้ว · รอครูตรวจ (${fmtDate(sub.submittedAt)})</span>`;
+            actionBtnHtml = `<button class="btn btn-soft" style="font-size:12.5px; padding:5px 12px" onclick="openSubmitModal('${a.id}')">✏️ ส่งงานใหม่</button>`;
+          }
+        } else {
+          statusHtml = `<span class="chip chip-amber">${ICONS.clock} คุณยังไม่ได้ส่งใบงานนี้</span>`;
+          actionBtnHtml = `<button class="btn btn-accent" style="font-size:12.5px; padding:6px 14px; font-weight:bold" onclick="openSubmitModal('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>ส่งงานทันที</button>`;
+        }
+      } else {
+        statusHtml = `<span class="chip chip-gray">⚪ ยังไม่ได้เข้าสู่ระบบนักศึกษา</span>`;
+        actionBtnHtml = `<button class="btn btn-primary" style="font-size:12.5px; padding:5px 12px" onclick="ensureStudentName()">🧑‍🎓 เข้าสู่ระบบเพื่อส่งงาน</button>`;
+      }
+    } else if (role === 'teacher') {
+      const subs = a.submissions || [];
+      const graded = subs.filter(s => s.score !== null && s.score !== undefined).length;
+      statusHtml = `<span class="chip chip-gray">${ICONS.users} ส่งแล้ว ${subs.length} คน (ตรวจแล้ว ${graded}/${subs.length})</span>`;
+      actionBtnHtml = `
+        <div style="display:flex; gap:6px">
+          <button class="btn btn-soft" style="font-size:12px; padding:4px 10px" onclick="openDetail('${a.id}')">📋 ดูรายละเอียด/ตรวจ</button>
+          <button class="btn btn-ghost" style="font-size:12px; padding:4px 8px" onclick="openEditAssignModal('${a.id}')">✏️ แก้ไข</button>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="pinned-assignment-card">
+        <div class="pinned-badge">
+          <span>📌</span> <span>ใบงานที่มอบหมาย (ตรึงไว้บนสุด)</span>
+        </div>
+        <div class="pinned-content">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap">
+            <div style="flex:1; min-width:240px">
+              <h3 class="pinned-title" style="cursor:pointer" onclick="openDetail('${a.id}')">${esc(a.title)}</h3>
+              <div class="pinned-meta">
+                ${a.subject ? `<span class="chip chip-indigo">${esc(a.subject)}</span>` : ''}
+                <span class="chip chip-gray">📅 กำหนดส่ง: ${a.dueDate ? fmtDateShort(a.dueDate) : 'ไม่มีกำหนด'}</span>
+                <span class="chip chip-gray">⭐ คะแนนเต็ม ${a.maxScore} คะแนน</span>
+              </div>
+            </div>
+            <div>
+              ${actionBtnHtml}
+            </div>
+          </div>
+          ${a.description ? `<div class="pinned-desc">${linkify(a.description)}</div>` : ''}
+          <div class="pinned-status-bar">
+            <div style="display:flex; align-items:center; gap:8px">
+              <b style="font-size:13px">สถานะของคุณ:</b> ${statusHtml}
+            </div>
+            <button class="btn btn-ghost" style="font-size:12px; padding:3px 8px" onclick="openDetail('${a.id}')">ดูรายละเอียดงาน &gt;</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  return html;
 }
 
 function postCard(p){
