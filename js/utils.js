@@ -154,6 +154,27 @@ function switchStudentUser() {
   ensureStudentName();
 }
 
+function logoutTeacher() {
+  if (!confirm('ต้องการออกจากระบบครูหรือไม่?')) return;
+  sessionStorage.removeItem('cwh_teacher_auth');
+  role = 'student';
+  localStorage.setItem(ROLE_KEY, 'student');
+  toast('🔒 ออกจากระบบครูเรียบร้อย');
+  showScreen('feed');
+}
+
+function logoutStudent() {
+  if (!confirm('ต้องการออกจากระบบนักเรียนหรือไม่?')) return;
+  studentName = '';
+  studentId = '';
+  studentCode = '';
+  localStorage.removeItem(STUDENT_KEY);
+  localStorage.removeItem('cwh_student_id_v1');
+  localStorage.removeItem('cwh_student_code_v1');
+  toast('👋 ออกจากระบบนักเรียนเรียบร้อย');
+  showScreen('feed');
+}
+
 /* ---------- Identity ---------- */
 function currentTeacherName() {
   return localStorage.getItem('cwh_teacher_name') || TEACHER;

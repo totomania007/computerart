@@ -32,14 +32,15 @@ function renderHeader(){
         ? `<img src="${esc(stuAvatar)}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px">`
         : (stuAvatar || '👤') + ' ';
       userBadge = `<span class="chip chip-indigo" style="cursor:pointer; font-weight:700" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar">${stuAvatarHtml}${esc(studentName)} (${esc(studentCode || 'นศ.')})</span>` +
-        `<button class="btn btn-ghost" style="padding:4px 8px; font-size:12px" onclick="switchStudentUser()" title="สลับบัญชีนักศึกษา">🔄 สลับ</button>`;
+        `<button class="btn btn-ghost" style="padding:4px 8px; font-size:12px; color:#B91C1C" onclick="logoutStudent()" title="ออกจากระบบนักเรียน">🚪 ออกจากระบบ</button>`;
     }
   } else if (role === 'teacher') {
     const teachAvatar = getSavedAvatar(TEACHER, true);
     const teachAvatarHtml = teachAvatar && teachAvatar.startsWith('http')
       ? `<img src="${esc(teachAvatar)}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px">`
       : teachAvatar + ' ';
-    userBadge = `<button class="btn btn-soft" style="padding:4px 10px; font-size:13px; font-weight:700" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar ครู">${teachAvatarHtml}เปลี่ยน Avatar</button>`;
+    userBadge = `<button class="btn btn-soft" style="padding:4px 10px; font-size:13px; font-weight:700" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar ครู">${teachAvatarHtml}เปลี่ยน Avatar</button>` +
+      `<button class="btn btn-ghost" style="padding:4px 8px; font-size:12px; color:#B91C1C; margin-left:4px" onclick="logoutTeacher()" title="ออกจากระบบครู">🚪 ออกจากระบบ</button>`;
   }
 
   rs.innerHTML =
