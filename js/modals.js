@@ -348,7 +348,7 @@ async function saveEditAssignment(){
         const file = exImgsInput.files[i];
         const res = await uploadToCloudinary(file);
         if (res) {
-          exampleImages.push({ name: res.name, dataUrl: res.url, url: res.url, type: res.type };
+          exampleImages.push({ name: res.name, dataUrl: res.url, url: res.url, type: res.type });
         }
       }
     }
