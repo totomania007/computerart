@@ -19,7 +19,8 @@ function renderFeed(){
   }
 
   // 3. รายการโพสต์ฟีดข่าวทั่วไป + AI Curator หมุนเวียน 3 วัน
-  const teacherPosts = data.posts || [];
+  // กรองเฉพาะโพสต์ของครูจากฐานข้อมูล ไม่รวม AI ซ้ำซ้อน
+  const teacherPosts = (data.posts || []).filter(p => p.author !== 'AI Art Curator 🤖');
   const curatedPosts = (typeof getCuratedRollingPosts === 'function') ? getCuratedRollingPosts() : [];
   
   // รวมโพสต์และเรียงลำดับจากใหม่สุดไปเก่าสุด
@@ -215,8 +216,8 @@ async function loadLinkPreviews(){
       const preview = await API.fetchLinkPreview(url);
       if(!preview) continue;
 
-      const imgHtml = preview.image ? `<div class="link-preview-img"><img src="${esc(preview.image)}" alt="${esc(preview.title || '')}" loading="lazy"></div>` : '';
-      const favHtml = preview.favicon ? `<img src="${esc(preview.favicon)}" alt="" class="link-favicon">` : '';
+      const imgHtml = preview.image ? `<div class="link-preview-img"><img src="${esc(preview.image)}" alt="${esc(preview.title || '')}" loading="lazy" onerror="this.parentElement.remove()"></div>` : '';
+      const favHtml = preview.favicon ? `<img src="${esc(preview.favicon)}" alt="" class="link-favicon" onerror="this.remove()">` : '';
 
       box.innerHTML = `
         <a href="${esc(preview.url)}" target="_blank" rel="noopener noreferrer" class="link-preview-card" onclick="event.stopPropagation()">

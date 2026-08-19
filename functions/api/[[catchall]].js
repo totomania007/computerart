@@ -498,27 +498,13 @@ export async function onRequest(context) {
 
       // GET /api/posts — List all posts & Autonomous AI Curator Maintenance
       if (path.length === 1 && method === 'GET') {
-        // 1. Maintenance: ลบโพสต์ AI ที่เก่ากว่า 3 วันออกอัตโนมัติ (3-Day Rolling Window)
+        // ลบโพสต์ AI ชั่วคราวที่ไม่มีรูปออกจากตาราง posts เพื่อไม่ให้เกิดภาพพรีวิวแตก
         await db.prepare(`
           DELETE FROM posts 
-          WHERE author = 'AI Art Curator 🤖' 
-          AND datetime(created_at) < datetime('now', '-3 days')
+          WHERE author = 'AI Art Curator 🤖' AND (image_url IS NULL OR id LIKE 'post_ai_daily_%')
         `).run().catch(() => {});
 
-        // 2. ตรวจสอบว่าวันนี้มีโพสต์ของ AI Art Curator แล้วหรือยัง
-        const todayAi = await db.prepare(`
-          SELECT count(*) as count 
-          FROM posts 
-          WHERE author = 'AI Art Curator 🤖' 
-          AND date(created_at) = date('now')
-        `).first().catch(() => ({ count: 0 }));
-
-        if (!todayAi || todayAi.count === 0) {
-          // หากยังไม่มี ให้ระบบสร้างเนื้อหาใหม่ประจำวัน 2 โพสต์ทันที
-          await seedDailyAiCuratorPosts(db, env).catch(() => {});
-        }
-
-        const postsResult = await db.prepare('SELECT * FROM posts ORDER BY created_at DESC').all();
+        const postsResult = await db.prepare("SELECT * FROM posts WHERE author != 'AI Art Curator 🤖' ORDER BY created_at DESC").all();
         const posts = postsResult.results || [];
         const likesResult = await db.prepare('SELECT * FROM post_likes').all().catch(() => ({ results: [] }));
         const commentsResult = await db.prepare('SELECT * FROM post_comments ORDER BY created_at ASC').all().catch(() => ({ results: [] }));
