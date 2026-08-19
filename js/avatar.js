@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — avatar.js
    ระบบเลือกและสุ่มสร้าง Avatar ด้วย AI (Dicebear + Emojis + Upload)
    ============================================================ */
@@ -170,7 +170,7 @@ async function handleCustomAvatarUpload(input){
   }
 }
 
-function saveSelectedAvatar(){
+async function saveSelectedAvatar(){
   if (!selectedAvatar) {
     toast('กรุณาเลือก Avatar ก่อนบันทึก');
     return;
@@ -179,6 +179,17 @@ function saveSelectedAvatar(){
   const isTeacher = role === 'teacher';
   if (isTeacher) {
     localStorage.setItem('cwh_teacher_avatar', selectedAvatar);
+    localStorage.setItem('cwh_avatar_' + currentTeacherName(), selectedAvatar);
+    localStorage.setItem('cwh_avatar_คุณครู', selectedAvatar);
+    
+    // Sync with database teachers table
+    try {
+      const teachers = await API.getTeachers();
+      const currentT = teachers.find(t => t.name === currentTeacherName()) || teachers[0];
+      if (currentT) {
+        await API.updateTeacher(currentT.id, { avatar: selectedAvatar });
+      }
+    } catch (_) {}
   } else {
     localStorage.setItem('cwh_student_avatar', selectedAvatar);
     if (studentName) {

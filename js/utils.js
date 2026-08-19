@@ -263,8 +263,9 @@ const POST_META = {
 const AVATAR_CLASSES = ['','alt1','alt2','alt3'];
 
 function getSavedAvatar(name, isTeacher) {
-  if (isTeacher || name === TEACHER || (role === 'teacher' && !name)) {
-    return localStorage.getItem('cwh_teacher_avatar') || '👩‍🏫';
+  const teacherName = currentTeacherName();
+  if (isTeacher || name === TEACHER || name === 'คุณครู' || name === teacherName || (role === 'teacher' && !name)) {
+    return localStorage.getItem('cwh_teacher_avatar') || localStorage.getItem('cwh_avatar_' + teacherName) || localStorage.getItem('cwh_avatar_คุณครู') || '👩‍🏫';
   }
   if (name) {
     return localStorage.getItem('cwh_avatar_' + name) || (name === studentName ? localStorage.getItem('cwh_student_avatar') : null) || '';
@@ -274,7 +275,8 @@ function getSavedAvatar(name, isTeacher) {
 
 function avatarOf(name, seedIdx, customAvatar){
   const cls = AVATAR_CLASSES[(seedIdx||0) % AVATAR_CLASSES.length];
-  const isTeacher = name === TEACHER || (role === 'teacher' && !name);
+  const teacherName = currentTeacherName();
+  const isTeacher = name === TEACHER || name === 'คุณครู' || name === teacherName || (role === 'teacher' && !name);
   const avatar = customAvatar || getSavedAvatar(name, isTeacher);
 
   if (avatar) {
