@@ -18,11 +18,17 @@ function renderFeed(){
     html += pinnedHtml;
   }
 
-  // 3. รายการโพสต์ฟีดข่าวทั่วไป
-  if(!data.posts.length && !pinnedHtml){
+  // 3. รายการโพสต์ฟีดข่าวทั่วไป + AI Curator หมุนเวียน 3 วัน
+  const teacherPosts = data.posts || [];
+  const curatedPosts = (typeof getCuratedRollingPosts === 'function') ? getCuratedRollingPosts() : [];
+  
+  // รวมโพสต์และเรียงลำดับจากใหม่สุดไปเก่าสุด
+  const allFeedPosts = [...teacherPosts, ...curatedPosts].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if(!allFeedPosts.length && !pinnedHtml){
     html += '<div class="card empty"><p>ยังไม่มีโพสต์</p></div>';
-  }else if(data.posts.length){
-    html += data.posts.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(postCard).join('');
+  }else if(allFeedPosts.length){
+    html += allFeedPosts.map(postCard).join('');
   }
   wrap.innerHTML = html;
   renderHeader();
@@ -229,10 +235,21 @@ async function loadLinkPreviews(){
 }
 
 async function toggleLike(postId){
-  const p = data.posts.find(x=>x.id===postId); if(!p) return;
   const me = currentIdentity();
   if(!me){ if(!ensureStudentName()) return; }
   const userName = currentIdentity();
+
+  if(postId.startsWith('curated_')){
+    let likes = JSON.parse(localStorage.getItem('cwh_curated_likes_' + postId) || '[]');
+    const idx = likes.indexOf(userName);
+    if(idx >= 0) likes.splice(idx, 1);
+    else likes.push(userName);
+    localStorage.setItem('cwh_curated_likes_' + postId, JSON.stringify(likes));
+    renderFeed();
+    return;
+  }
+
+  const p = data.posts.find(x=>x.id===postId); if(!p) return;
   await API.toggleLike(postId, userName);
   renderFeed();
 }
@@ -243,18 +260,31 @@ function focusComment(postId){
 }
 
 async function addComment(postId){
-  const p = data.posts.find(x=>x.id===postId); if(!p) return;
   if(!ensureStudentName()) return;
   const input = document.getElementById('cmt-'+postId);
   const text = (input.value||'').trim();
   if(!text) return;
   const userName = currentIdentity();
   input.value = '';
+
+  if(postId.startsWith('curated_')){
+    let cmts = JSON.parse(localStorage.getItem('cwh_curated_cmts_' + postId) || '[]');
+    cmts.push({ id: uid(), name: userName, text, createdAt: nowISO() });
+    localStorage.setItem('cwh_curated_cmts_' + postId, JSON.stringify(cmts));
+    renderFeed();
+    return;
+  }
+
+  const p = data.posts.find(x=>x.id===postId); if(!p) return;
   await API.addComment(postId, { id: uid(), name: userName, text, createdAt: nowISO() });
   renderFeed();
 }
 
 async function deletePost(postId){
+  if(postId.startsWith('curated_')){
+    toast('ℹ️ โพสต์ของ AI Curator จะหมุนเวียนและหมดอายุอัตโนมัติใน 3 วัน');
+    return;
+  }
   if(!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้?')) return;
   toast('⏳ กำลังลบโพสต์...');
   const ok = await API.deletePost(postId);
