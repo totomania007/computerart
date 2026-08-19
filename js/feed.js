@@ -150,7 +150,7 @@ function postCard(p){
     </div>` : '';
 
   return '<article class="post">'+
-    '<div class="post-head">'+avatarOf(p.author, (p.likes||[]).length+(p.comments||[]).length)+
+    '<div class="post-head">'+avatarOf(p.author, (p.likes||[]).length+(p.comments||[]).length, p.authorAvatar)+
       '<div class="post-meta"><div class="post-author">'+esc(p.author)+'</div><div class="post-time">'+fmtDate(p.createdAt)+'</div></div>'+
       '<span class="chip '+meta.cls+'" style="margin-right:6px">'+meta.label+'</span>'+
       teacherPostActions +

@@ -514,22 +514,32 @@ export async function onRequest(context) {
           });
         }
 
-        const teacherRow = await db.prepare('SELECT name FROM teachers ORDER BY created_at ASC').first().catch(() => null);
-        const currentTeacher = teacherRow?.name || 'คุณครู';
+        const teachersResult = await db.prepare('SELECT id, name, avatar FROM teachers').all().catch(() => ({ results: [] }));
+        const teacherAvatars = {};
+        for (const t of (teachersResult.results || [])) {
+          if (t.name) teacherAvatars[t.name] = t.avatar || '👩‍🏫';
+        }
+        const defaultTeacher = teachersResult.results?.[0];
+        const defaultTeacherAvatar = defaultTeacher?.avatar || '👩‍🏫';
+        const defaultTeacherName = defaultTeacher?.name || 'คุณครู';
 
-        const enrichedPosts = posts.map(p => ({
-          id: p.id,
-          type: p.type,
-          title: p.title,
-          author: (p.author === 'คุณครู' && currentTeacher !== 'คุณครู') ? currentTeacher : p.author,
-          text: p.text,
-          image: p.image_url,
-          videoUrl: p.video_url,
-          videoFile: p.video_file_url,
-          createdAt: p.created_at,
-          likes: likesByPost[p.id] || [],
-          comments: commentsByPost[p.id] || []
-        }));
+        const enrichedPosts = posts.map(p => {
+          const authorName = (p.author === 'คุณครู' && defaultTeacherName !== 'คุณครู') ? defaultTeacherName : p.author;
+          return {
+            id: p.id,
+            type: p.type,
+            title: p.title,
+            author: authorName,
+            authorAvatar: teacherAvatars[authorName] || teacherAvatars[p.author] || defaultTeacherAvatar,
+            text: p.text,
+            image: p.image_url,
+            videoUrl: p.video_url,
+            videoFile: p.video_file_url,
+            createdAt: p.created_at,
+            likes: likesByPost[p.id] || [],
+            comments: commentsByPost[p.id] || []
+          };
+        });
 
         return jsonResponse({ success: true, posts: enrichedPosts });
       }

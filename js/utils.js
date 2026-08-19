@@ -264,6 +264,12 @@ const AVATAR_CLASSES = ['','alt1','alt2','alt3'];
 
 function getSavedAvatar(name, isTeacher) {
   const teacherName = currentTeacherName();
+  if (Array.isArray(data.teachers)) {
+    const matchedTeacher = data.teachers.find(t => t.name === name || (isTeacher && (t.name === teacherName || t.name === 'คุณครู')));
+    if (matchedTeacher && matchedTeacher.avatar) {
+      return matchedTeacher.avatar;
+    }
+  }
   if (isTeacher || name === TEACHER || name === 'คุณครู' || name === teacherName || (role === 'teacher' && !name)) {
     return localStorage.getItem('cwh_teacher_avatar') || localStorage.getItem('cwh_avatar_' + teacherName) || localStorage.getItem('cwh_avatar_คุณครู') || '👩‍🏫';
   }
@@ -281,7 +287,7 @@ function avatarOf(name, seedIdx, customAvatar){
 
   if (avatar) {
     if (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image')) {
-      return `<div class="avatar ${cls} clickable" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar"><img src="${esc(avatar)}" alt="avatar"></div>`;
+      return `<div class="avatar ${cls} clickable" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar"><img src="${esc(avatar)}" alt="avatar" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerText='${esc((name||'👤').charAt(0))}';"></div>`;
     }
     return `<div class="avatar ${cls} clickable" onclick="openAvatarPickerModal()" title="คลิกเพื่อเปลี่ยน Avatar" style="font-size:22px">${esc(avatar)}</div>`;
   }

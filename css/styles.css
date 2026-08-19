@@ -455,3 +455,66 @@ footer{max-width:1080px; margin:0 auto; padding:10px 16px 30px; display:flex; ga
 .status-badge.local{background:#FEF3C7; color:#92400E}
 
 .pin-display{font-size:24px; letter-spacing:12px; text-align:center; font-weight:bold}
+
+/* ---------- Mobile Responsive Styles ---------- */
+@media (max-width: 680px) {
+  .header-in {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .logo h1 {
+    font-size: 16.5px;
+  }
+  .logo-badge {
+    width: 36px;
+    height: 36px;
+  }
+  nav {
+    width: 100%;
+    order: 3;
+    justify-content: space-between;
+    margin-top: 4px;
+    gap: 4px;
+  }
+  .nav-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 12.5px;
+    gap: 4px;
+  }
+  .nav-tab svg {
+    width: 15px;
+    height: 15px;
+  }
+  .role-switch {
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-left: auto;
+    padding: 3px;
+  }
+  .role-switch button {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+  }
+  .avatar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 8px;
+    max-height: 240px;
+  }
+  .pinned-content {
+    padding: 12px;
+  }
+  .pinned-title {
+    font-size: 15px;
+  }
+  .post-head {
+    padding: 12px 14px 8px;
+    gap: 10px;
+  }
+}

@@ -647,13 +647,26 @@ const API = {
   // -------------------------------------------------------------
   async syncAll() {
     if (this.isCloudConnected) {
-      const [posts, assignments] = await Promise.all([
+      const [posts, assignments, teachers] = await Promise.all([
         this.getPosts(),
-        this.getAssignments()
+        this.getAssignments(),
+        this.getTeachers()
       ]);
       data.posts = posts;
       data.assignments = assignments;
+      if (Array.isArray(teachers) && teachers.length) {
+        data.teachers = teachers;
+        teachers.forEach(t => {
+          if (t.avatar) {
+            localStorage.setItem('cwh_avatar_' + t.name, t.avatar);
+            if (t.id === 'teacher_default' || t.name === currentTeacherName() || t.name === 'คุณครู') {
+              localStorage.setItem('cwh_teacher_avatar', t.avatar);
+            }
+          }
+        });
+      }
     }
+    renderHeader();
     render();
   }
 };
