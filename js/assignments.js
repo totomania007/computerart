@@ -134,7 +134,7 @@ function openSubmitModal(id){
     '<div class="field"><label>ชื่อ-นามสกุล *</label><input class="input" id="subName" value="'+esc(studentName)+'"></div>'+
     '<div class="field"><label>คำตอบ / รายละเอียดผลงาน</label><textarea class="textarea" id="subText" placeholder="อธิบายสิ่งที่ทำ หรือส่งลิงก์/ไฟล์ด้านล่าง">'+esc(mine?mine.text:'')+'</textarea></div>'+
     '<div class="row">'+
-      '<div class="field"><label>ไฟล์ผลงาน (Cloudinary Direct Storage)</label><div class="file-drop" id="subFileDrop" onclick="document.getElementById(\'subFile\').click()"><span id="subFileLabel">'+(mine&&mine.file?esc(mine.file.name):'คลิกเพื่อเลือกไฟล์')+'</span></div><input type="file" id="subFile" style="display:none" onchange="onPickFile(this,\'subFileLabel\')"></div>'+
+      '<div class="field"><label>ไฟล์ผลงาน (PDF, รูปภาพ ไม่เกิน 5MB)</label><div class="file-drop" id="subFileDrop" onclick="document.getElementById(\'subFile\').click()"><span id="subFileLabel">'+(mine&&mine.file?esc(mine.file.name):'คลิกเพื่อเลือกไฟล์ (ไม่เกิน 5 MB)')+'</span></div><input type="file" id="subFile" style="display:none" onchange="onPickFile(this,\'subFileLabel\')"><div class="hint">รูปภาพจะถูกบีบอัดให้คมชัดและขนาดเล็กลงอัตโนมัติ</div></div>'+
       '<div class="field"><label>หรือลิงก์ผลงาน (Google Drive ฯลฯ)</label><input class="input" id="subLink" placeholder="https://..." value="'+esc(mine?mine.link:'')+'"></div>'+
     '</div>'+
     (mine && fileUrl ? '<button class="btn btn-ghost" style="margin-bottom:10px" onclick="openFile(\''+esc(fileUrl)+'\',\''+esc(mine.file.name)+'\')">'+ICONS.download+'ดูไฟล์ที่ส่งเดิม</button>' : '');
