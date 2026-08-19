@@ -268,6 +268,26 @@ const API = {
     return true;
   },
 
+  async generateCuratorPost(apiKey, topic) {
+    if (this.isCloudConnected) {
+      try {
+        const res = await fetch(`${APP_CONFIG.getApiUrl()}/curator/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey, topic })
+        });
+        const json = await res.json();
+        if (json.success) {
+          await this.syncAll();
+        }
+        return json;
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
+    }
+    return { success: false, error: 'กรุณาเชื่อมต่อ Cloudflare D1 ก่อน' };
+  },
+
   async updatePost(postId, postData) {
     if (this.isCloudConnected) {
       try {

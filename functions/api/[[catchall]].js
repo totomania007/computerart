@@ -578,6 +578,108 @@ export async function onRequest(context) {
     }
 
     // -------------------------------------------------------------
+    // Route: /api/curator (Gemini AI Daily Digital Art Post Generator)
+    // -------------------------------------------------------------
+    if (path[0] === 'curator') {
+      if (path.length >= 2 && path[1] === 'generate' && method === 'POST') {
+        const body = await request.json().catch(() => ({}));
+        const apiKey = body.apiKey || env.GEMINI_API_KEY || '';
+        if (!apiKey) {
+          return errorResponse('กรุณาระบุ Google Gemini API Key (สามารถรับฟรีได้ที่ aistudio.google.com)');
+        }
+
+        const customTopic = body.topic ? `โดยเน้นหัวข้อเกี่ยวกับ: ${body.topic}` : '';
+
+        const prompt = `คุณคืออาจารย์ผู้เชี่ยวชาญด้านคอมพิวเตอร์ศิลปะ ทัศนศิลป์ และการออกแบบดิจิทัล (Digital Art & Visual Design Educator)
+หน้าที่ของคุณคือสร้างบทความความรู้และเทคนิคศิลปะดิจิทัล 1 เรื่อง เพื่อสอนและสร้างแรงบันดาลใจให้นักศึกษาศิลปะระดับมหาวิทยาลัย/วิทยาลัย ${customTopic}
+
+ให้ตอบกลับเป็นโครงสร้าง JSON Format เท่านั้น (ไม่มี Markdown backticks หรือข้อความอื่นนอก JSON) โดยมีคีย์ดังนี้:
+{
+  "title": "หัวข้อบทความภาษาไทย (ขึ้นต้นด้วยอิโมจิที่เหมาะสม เช่น 🎨, 💡, 📐, 🌟, 🤖)",
+  "type": "inspiration หรือ tutorial หรือ example หรือ video",
+  "text": "เนื้อหาการสอนภาษาไทยที่กระชับ เข้าใจง่าย แบ่งเป็นข้อๆ หรือขั้นตอนปฏิบัติชัดเจน มีความยาวประมาณ 4-6 ย่อหน้า/ข้อ แนะนำเทคนิคและวิธีคิดเชิงศิลปะ",
+  "links": [
+    { "title": "ชื่อเครื่องมือ/เว็บไซต์", "url": "https://..." }
+  ],
+  "credits": "แหล่งอ้างอิงและเครดิตผลงานตามหลักวิชาการ"
+}`;
+
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+          const aiRes = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json' }
+            }),
+            signal: AbortSignal.timeout(12000)
+          });
+
+          const aiData = await aiRes.json();
+          if (!aiRes.ok) {
+            return errorResponse(aiData.error?.message || 'เกิดข้อผิดพลาดในการเรียก Gemini API', aiRes.status);
+          }
+
+          const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!rawText) return errorResponse('AI ไม่ได้ส่งคำตอบกลับมา');
+
+          const parsed = JSON.parse(rawText);
+
+          let fullText = parsed.text || '';
+          if (Array.isArray(parsed.links) && parsed.links.length > 0) {
+            fullText += '\n\n🔗 ศึกษาเครื่องมือ/แหล่งเรียนรู้เพิ่มเติม:\n' + parsed.links.map(l => `• ${l.title}: ${l.url}`).join('\n');
+          }
+          if (parsed.credits) {
+            fullText += '\n\n📚 แหล่งอ้างอิง & เครดิต: ' + parsed.credits;
+          }
+
+          const newPostId = 'post_ai_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          const now = new Date().toISOString();
+
+          await db.prepare(`
+            INSERT INTO posts (id, type, title, author, text, image_url, video_url, video_file_url, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            newPostId,
+            parsed.type || 'inspiration',
+            parsed.title || '🎨 บทเรียน Digital Art ประจำวัน',
+            'AI Art Curator 🤖',
+            fullText,
+            null,
+            null,
+            null,
+            now
+          ).run();
+
+          // 3-Day Rolling Window: ลบโพสต์ของ AI ที่เก่ากว่า 3 วันออกอัตโนมัติ
+          await db.prepare(`
+            DELETE FROM posts
+            WHERE author = 'AI Art Curator 🤖' AND datetime(created_at) < datetime('now', '-3 days')
+          `).run().catch(() => {});
+
+          return jsonResponse({
+            success: true,
+            message: 'สร้างบทความ AI ประจำวันสำเร็จและขึ้นฟีดเรียบร้อย',
+            post: {
+              id: newPostId,
+              type: parsed.type || 'inspiration',
+              title: parsed.title,
+              author: 'AI Art Curator 🤖',
+              authorAvatar: '🎨',
+              text: fullText,
+              createdAt: now,
+              likes: [],
+              comments: []
+            }
+          });
+        } catch (err) {
+          return errorResponse('ไม่สามารถติดต่อ Gemini API ได้: ' + (err.message || String(err)));
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
     // Route: /api/assignments
     // -------------------------------------------------------------
     if (path[0] === 'assignments') {

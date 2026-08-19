@@ -489,6 +489,7 @@ async function deleteStudentItem(sId){
 async function openTeacherSettingsModal(){
   openModal('teacherSettingsModal');
   switchTeacherSettingsTab('teachers');
+  loadGeminiSettings();
 }
 
 function switchTeacherSettingsTab(tab){
@@ -501,7 +502,51 @@ function switchTeacherSettingsTab(tab){
   });
 
   if (tab === 'teachers') renderTeacherList();
+  if (tab === 'ai') loadGeminiSettings();
   if (tab === 'moderation') renderModerationList();
+}
+
+function loadGeminiSettings(){
+  const keyInput = document.getElementById('geminiApiKeyInput');
+  if (keyInput) keyInput.value = localStorage.getItem('cwh_gemini_api_key') || '';
+}
+
+function saveGeminiApiKey(){
+  const keyInput = document.getElementById('geminiApiKeyInput');
+  const key = (keyInput ? keyInput.value : '').trim();
+  if (key) {
+    localStorage.setItem('cwh_gemini_api_key', key);
+    toast('✅ บันทึก Google Gemini API Key เรียบร้อย');
+  } else {
+    localStorage.removeItem('cwh_gemini_api_key');
+    toast('🗑️ ลบ API Key ออกจากเครื่องเรียบร้อย');
+  }
+}
+
+async function generateAiCuratorPostNow(){
+  const keyInput = document.getElementById('geminiApiKeyInput');
+  const topicInput = document.getElementById('geminiCustomTopic');
+  const key = (keyInput ? keyInput.value : '').trim() || localStorage.getItem('cwh_gemini_api_key') || '';
+  const topic = (topicInput ? topicInput.value : '').trim();
+
+  if (!key) {
+    toast('⚠️ กรุณากรอก Gemini API Key ก่อน (กดรับฟรีได้ที่ aistudio.google.com)');
+    if (keyInput) keyInput.focus();
+    return;
+  }
+
+  saveGeminiApiKey();
+
+  toast('🤖 กำลังสั่งให้ Gemini AI ประพันธ์บทความ Digital Art...');
+  const res = await API.generateCuratorPost(key, topic);
+
+  if (res && res.success) {
+    toast('✨ Gemini AI สร้างบทความใหม่และโพสต์ขึ้นฟีดเรียบร้อยแล้ว!');
+    closeModal('teacherSettingsModal');
+    showScreen('feed');
+  } else {
+    toast('❌ เกิดข้อผิดพลาด: ' + (res?.error || 'ไม่สามารถติดต่อ AI ได้'));
+  }
 }
 
 async function renderTeacherList(){
