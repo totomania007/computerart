@@ -1,21 +1,286 @@
 ﻿/* ============================================================
    Classwork Hub — curator.js
-   ระบบ AI Art Curator: หมุนเวียนคอนเทนต์ศิลปะดิจิทัลรายวัน (3-Day Rolling Window)
+   ระบบ AI Art Curator: คอนเทนต์ศิลปะดิจิทัลพร้อมภาพประกอบ/อินโฟกราฟิกตรงตามเนื้อหา 100%
    - วันที่ 1 โพสต์
    - วันที่ 2 เพิ่มอีก 2 โพสต์
    - วันที่ 3 เพิ่มอีก 2 โพสต์
-   - วันที่ 4 ลบโพสต์ของวันที่ 1 ออก แล้วโพสต์ของใหม่ 2 โพสต์ วนลูปไปเรื่อยๆ
+   - วันที่ 4 ลบโพสต์ของวันที่ 1 ออก แล้วโพสต์ของใหม่ 2 โพสต์ วนลูป 3-Day Rolling Window
    ============================================================ */
 'use strict';
 
+// -------------------------------------------------------------
+// สร้างรูปภาพ Infographic / Diagram เฉพาะทางแบบ SVG คมชัด ตรงตามเนื้อหา
+// -------------------------------------------------------------
+function makeSvgDataUrl(svgString) {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svgString.trim());
+}
+
+// 1. Infographic: ทฤษฎีสี 60-30-10
+const SVG_COLOR_60_30_10 = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#18181B"/>
+  <text x="400" y="55" fill="#FFFFFF" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">ทฤษฎีสัดส่วนสี 60 - 30 - 10 ในงานออกแบบ</text>
+  <text x="400" y="85" fill="#A1A1AA" font-size="16" text-anchor="middle" font-family="sans-serif">The 60-30-10 Color Rule for Visual Hierarchy</text>
+  
+  <!-- 60% Block -->
+  <rect x="60" y="120" width="380" height="240" rx="10" fill="#3B82F6"/>
+  <text x="250" y="210" fill="#FFFFFF" font-size="42" font-weight="900" text-anchor="middle" font-family="sans-serif">60%</text>
+  <text x="250" y="250" fill="#FFFFFF" font-size="20" font-weight="bold" text-anchor="middle" font-family="sans-serif">สีหลัก (Dominant Color)</text>
+  <text x="250" y="280" fill="#DBEAFE" font-size="14" text-anchor="middle" font-family="sans-serif">พื้นหลัง / บรรยากาศโดยรวม</text>
+
+  <!-- 30% Block -->
+  <rect x="460" y="120" width="180" height="240" rx="10" fill="#8B5CF6"/>
+  <text x="550" y="210" fill="#FFFFFF" font-size="36" font-weight="900" text-anchor="middle" font-family="sans-serif">30%</text>
+  <text x="550" y="250" fill="#FFFFFF" font-size="18" font-weight="bold" text-anchor="middle" font-family="sans-serif">สีรอง</text>
+  <text x="550" y="280" fill="#EDE9FE" font-size="13" text-anchor="middle" font-family="sans-serif">ตัวละคร / องค์ประกอบ</text>
+
+  <!-- 10% Block -->
+  <rect x="660" y="120" width="80" height="240" rx="10" fill="#F59E0B"/>
+  <text x="700" y="210" fill="#FFFFFF" font-size="26" font-weight="900" text-anchor="middle" font-family="sans-serif">10%</text>
+  <text x="700" y="250" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">สีเน้น</text>
+  <text x="700" y="280" fill="#FEF3C7" font-size="11" text-anchor="middle" font-family="sans-serif">จุดเด่น</text>
+  
+  <rect x="60" y="385" width="680" height="35" rx="6" fill="#27272A"/>
+  <text x="400" y="408" fill="#E4E4E7" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">💡 เคล็ดลับ: สีเน้น 10% ควรเป็นสีที่ตัดกับ 60% เพื่อดึงดูดสายตาทันที</text>
+</svg>
+`);
+
+// 2. Infographic: 3 Blending Modes
+const SVG_BLENDING_MODES = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#0F172A"/>
+  <text x="400" y="55" fill="#FFFFFF" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">3 Layer Blending Modes ที่สายอาร์ตต้องรู้</text>
+  
+  <!-- Multiply -->
+  <rect x="50" y="100" width="210" height="300" rx="12" fill="#1E293B" stroke="#475569" stroke-width="2"/>
+  <rect x="70" y="120" width="170" height="100" rx="8" fill="#1E1B4B"/>
+  <circle cx="155" cy="170" r="35" fill="#6366F1" opacity="0.6"/>
+  <circle cx="135" cy="170" r="35" fill="#000000" opacity="0.8"/>
+  <text x="155" y="255" fill="#38BDF8" font-size="20" font-weight="bold" text-anchor="middle" font-family="sans-serif">1. Multiply</text>
+  <text x="155" y="285" fill="#F8FAFC" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">โหมดลงเงามืด (Darken)</text>
+  <text x="155" y="315" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• ตัดสีขาวออก</text>
+  <text x="155" y="340" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• ใช้ลงเงาตัวละคร</text>
+  <text x="155" y="365" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• คัดลอกเส้นหมึกภาพวาด</text>
+
+  <!-- Screen -->
+  <rect x="295" y="100" width="210" height="300" rx="12" fill="#1E293B" stroke="#475569" stroke-width="2"/>
+  <rect x="315" y="120" width="170" height="100" rx="8" fill="#020617"/>
+  <circle cx="385" cy="170" r="35" fill="#F59E0B" opacity="0.8"/>
+  <circle cx="415" cy="170" r="35" fill="#EC4899" opacity="0.8"/>
+  <text x="400" y="255" fill="#FCD34D" font-size="20" font-weight="bold" text-anchor="middle" font-family="sans-serif">2. Screen</text>
+  <text x="400" y="285" fill="#F8FAFC" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">โหมดเพิ่มแสง (Lighten)</text>
+  <text x="400" y="315" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• ตัดสีดำออก</text>
+  <text x="400" y="340" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• สร้างเอฟเฟกต์แสงเรือง</text>
+  <text x="400" y="365" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• แสงเวทมนตร์ / นีออน</text>
+
+  <!-- Overlay -->
+  <rect x="540" y="100" width="210" height="300" rx="12" fill="#1E293B" stroke="#475569" stroke-width="2"/>
+  <rect x="560" y="120" width="170" height="100" rx="8" fill="#334155"/>
+  <circle cx="630" cy="170" r="35" fill="#3B82F6"/>
+  <circle cx="660" cy="170" r="35" fill="#EF4444" opacity="0.7"/>
+  <text x="645" y="255" fill="#A78BFA" font-size="20" font-weight="bold" text-anchor="middle" font-family="sans-serif">3. Overlay</text>
+  <text x="645" y="285" fill="#F8FAFC" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">โหมดมิติ (Contrast)</text>
+  <text x="645" y="315" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• เพิ่มคอนทราสต์แสงเงา</text>
+  <text x="645" y="340" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• เคลือบ Texture ลายน้ำ</text>
+  <text x="645" y="365" fill="#94A3B8" font-size="13" text-anchor="middle" font-family="sans-serif">• ปรับโทนสีให้กลมกลืน</text>
+</svg>
+`);
+
+// 3. Infographic: Rim Light
+const SVG_RIM_LIGHT = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#09090B"/>
+  <text x="400" y="55" fill="#FFFFFF" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">เทคนิคการจัดแสงขอบ (Rim Light / Kicker)</text>
+  
+  <!-- Background Ambient -->
+  <circle cx="280" cy="240" r="140" fill="#18181B"/>
+  
+  <!-- Silhouette Character with Bright Rim -->
+  <path d="M 280 140 C 240 140 210 170 210 210 C 210 240 230 265 255 275 C 200 290 170 340 170 390 L 390 390 C 390 340 360 290 305 275 C 330 265 350 240 350 210 C 350 170 320 140 280 140 Z" fill="#27272A"/>
+  
+  <!-- Glowing Rim Light on Edge -->
+  <path d="M 280 140 C 320 140 350 170 350 210 C 350 240 330 265 305 275 C 360 290 390 340 390 390" fill="none" stroke="#00F0FF" stroke-width="8" filter="drop-shadow(0 0 10px #00F0FF)"/>
+  
+  <!-- Backlight Source -->
+  <circle cx="460" cy="180" r="25" fill="#00F0FF"/>
+  <path d="M 460 180 L 350 210" stroke="#00F0FF" stroke-width="3" stroke-dasharray="6,4"/>
+  <text x="495" y="185" fill="#00F0FF" font-size="16" font-weight="bold" font-family="sans-serif">แหล่งกำเนิดแสงด้านหลัง (Backlight)</text>
+
+  <!-- Explanation Panel -->
+  <rect x="460" y="230" width="300" height="150" rx="10" fill="#18181B" stroke="#27272A" stroke-width="2"/>
+  <text x="480" y="265" fill="#FFFFFF" font-size="16" font-weight="bold" font-family="sans-serif">✨ ประโยชน์ของ Rim Light:</text>
+  <text x="480" y="295" fill="#A1A1AA" font-size="14" font-family="sans-serif">1. ตัดตัวละครให้ลอยเด่นจากฉากหลัง</text>
+  <text x="480" y="325" fill="#A1A1AA" font-size="14" font-family="sans-serif">2. สร้างมิติและความรู้สึกทรงพลัง/ไซไฟ</text>
+  <text x="480" y="355" fill="#A1A1AA" font-size="14" font-family="sans-serif">3. ใช้โหมด Color Dodge วาดขอบแสง</text>
+</svg>
+`);
+
+// 4. Infographic: Rule of Thirds
+const SVG_RULE_OF_THIRDS = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#1E1B4B"/>
+  
+  <!-- Artwork Background Canvas -->
+  <rect x="80" y="80" width="640" height="320" rx="8" fill="#312E81"/>
+  
+  <!-- Horizon Line (at 1/3) -->
+  <rect x="80" y="293" width="640" height="107" rx="0" fill="#4338CA"/>
+  
+  <!-- Sun / Moon at Intersection -->
+  <circle cx="293" cy="186" r="45" fill="#F59E0B"/>
+  
+  <!-- Grid Lines (Rule of Thirds) -->
+  <line x1="293" y1="80" x2="293" y2="400" stroke="#EF4444" stroke-width="3" stroke-dasharray="8,6"/>
+  <line x1="506" y1="80" x2="506" y2="400" stroke="#EF4444" stroke-width="3" stroke-dasharray="8,6"/>
+  <line x1="80" y1="186" x2="720" y2="186" stroke="#EF4444" stroke-width="3" stroke-dasharray="8,6"/>
+  <line x1="80" y1="293" x2="720" y2="293" stroke="#EF4444" stroke-width="3" stroke-dasharray="8,6"/>
+  
+  <!-- 4 Intersection Points -->
+  <circle cx="293" cy="186" r="9" fill="#EF4444" stroke="#FFFFFF" stroke-width="3"/>
+  <circle cx="506" cy="186" r="9" fill="#EF4444" stroke="#FFFFFF" stroke-width="3"/>
+  <circle cx="293" cy="293" r="9" fill="#EF4444" stroke="#FFFFFF" stroke-width="3"/>
+  <circle cx="506" cy="293" r="9" fill="#EF4444" stroke="#FFFFFF" stroke-width="3"/>
+
+  <text x="400" y="45" fill="#FFFFFF" font-size="24" font-weight="bold" text-anchor="middle" font-family="sans-serif">กฎสามส่วน (Rule of Thirds) &amp; จุดตัดเก้าช่อง</text>
+  <text x="293" y="125" fill="#FEF08A" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">★ วางจุดสนใจหลักตรงจุดตัด</text>
+</svg>
+`);
+
+// 5. Infographic: Color Palette Neon Noir
+const SVG_PALETTE_NEON_NOIR = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#121214"/>
+  <text x="400" y="55" fill="#FFFFFF" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">ชุดคู่สีประจำวัน: Neon Noir Aesthetic</text>
+  
+  <!-- Swatch 1 -->
+  <rect x="70" y="100" width="145" height="230" rx="10" fill="#FF007F"/>
+  <rect x="70" y="270" width="145" height="60" rx="10" fill="#000000" opacity="0.6"/>
+  <text x="142" y="295" fill="#FFFFFF" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">Cyber Magenta</text>
+  <text x="142" y="320" fill="#FFD1E6" font-size="14" font-weight="bold" text-anchor="middle" font-family="monospace">#FF007F</text>
+
+  <!-- Swatch 2 -->
+  <rect x="235" y="100" width="145" height="230" rx="10" fill="#00F0FF"/>
+  <rect x="235" y="270" width="145" height="60" rx="10" fill="#000000" opacity="0.6"/>
+  <text x="307" y="295" fill="#FFFFFF" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">Deep Cyan</text>
+  <text x="307" y="320" fill="#CCFBFE" font-size="14" font-weight="bold" text-anchor="middle" font-family="monospace">#00F0FF</text>
+
+  <!-- Swatch 3 -->
+  <rect x="400" y="100" width="145" height="230" rx="10" fill="#FFDE59"/>
+  <rect x="400" y="270" width="145" height="60" rx="10" fill="#000000" opacity="0.6"/>
+  <text x="472" y="295" fill="#FFFFFF" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">Electric Amber</text>
+  <text x="472" y="320" fill="#FEF9C3" font-size="14" font-weight="bold" text-anchor="middle" font-family="monospace">#FFDE59</text>
+
+  <!-- Swatch 4 -->
+  <rect x="565" y="100" width="165" height="230" rx="10" fill="#2A2A32" stroke="#3F3F46" stroke-width="2"/>
+  <rect x="565" y="270" width="165" height="60" rx="10" fill="#000000" opacity="0.6"/>
+  <text x="647" y="295" fill="#FFFFFF" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">Charcoal Base</text>
+  <text x="647" y="320" fill="#E4E4E7" font-size="14" font-weight="bold" text-anchor="middle" font-family="monospace">#121214</text>
+
+  <rect x="70" y="360" width="660" height="50" rx="8" fill="#1E1E24" stroke="#3F3F46" stroke-width="1.5"/>
+  <text x="400" y="392" fill="#E4E4E7" font-size="15" font-weight="bold" text-anchor="middle" font-family="sans-serif">🎮 เหมาะสำหรับ: ผลงานแนว Cyberpunk, Futuristic UI, และภาพวาดไฟนีออนกลางคืน</text>
+</svg>
+`);
+
+// 6. Infographic: Prompt Engineering Formula
+const SVG_AI_PROMPT_FORMULA = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#0F172A"/>
+  <text x="400" y="55" fill="#FFFFFF" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">สูตรโครงสร้าง Prompt สำหรับสาย Digital Art</text>
+  
+  <!-- Step 1 -->
+  <rect x="50" y="100" width="150" height="220" rx="10" fill="#3B82F6"/>
+  <text x="125" y="140" fill="#FFFFFF" font-size="18" font-weight="bold" text-anchor="middle" font-family="sans-serif">1. ประธาน</text>
+  <text x="125" y="165" fill="#DBEAFE" font-size="14" text-anchor="middle" font-family="sans-serif">(Subject)</text>
+  <text x="125" y="220" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Cyberpunk</text>
+  <text x="125" y="245" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Ancient Temple</text>
+  <text x="125" y="270" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">in Neo Bangkok</text>
+
+  <!-- Step 2 -->
+  <rect x="230" y="100" width="150" height="220" rx="10" fill="#8B5CF6"/>
+  <text x="305" y="140" fill="#FFFFFF" font-size="18" font-weight="bold" text-anchor="middle" font-family="sans-serif">2. สไตล์ศิลปะ</text>
+  <text x="305" y="165" fill="#EDE9FE" font-size="14" text-anchor="middle" font-family="sans-serif">(Art Style)</text>
+  <text x="305" y="220" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Concept Art</text>
+  <text x="305" y="245" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Digital Painting</text>
+  <text x="305" y="270" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Matte Painting</text>
+
+  <!-- Step 3 -->
+  <rect x="410" y="100" width="150" height="220" rx="10" fill="#EC4899"/>
+  <text x="485" y="140" fill="#FFFFFF" font-size="18" font-weight="bold" text-anchor="middle" font-family="sans-serif">3. แสง &amp; สี</text>
+  <text x="485" y="165" fill="#FCE7F3" font-size="14" text-anchor="middle" font-family="sans-serif">(Lighting)</text>
+  <text x="485" y="220" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Dramatic</text>
+  <text x="485" y="245" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Rim Lighting</text>
+  <text x="485" y="270" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Glowing Neon</text>
+
+  <!-- Step 4 -->
+  <rect x="590" y="100" width="160" height="220" rx="10" fill="#10B981"/>
+  <text x="670" y="140" fill="#FFFFFF" font-size="18" font-weight="bold" text-anchor="middle" font-family="sans-serif">4. คุณภาพ</text>
+  <text x="670" y="165" fill="#D1FAE5" font-size="14" text-anchor="middle" font-family="sans-serif">(Engine/Quality)</text>
+  <text x="670" y="220" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Unreal Engine 5</text>
+  <text x="670" y="245" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">8k Octane Render</text>
+  <text x="670" y="270" fill="#FFFFFF" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">Cinematic</text>
+
+  <!-- Prompt Output Box -->
+  <rect x="50" y="340" width="700" height="75" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1.5"/>
+  <text x="70" y="370" fill="#FCD34D" font-size="13" font-weight="bold" font-family="monospace">💬 Full Prompt:</text>
+  <text x="70" y="395" fill="#FFFFFF" font-size="13" font-family="monospace">"Futuristic cyberpunk temple in neo-bangkok, dramatic rim lighting, glowing neon, 8k octane render"</text>
+</svg>
+`);
+
+// 7. Infographic: Hair Cutout / Refine Edge
+const SVG_HAIR_CUTOUT = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#18181B"/>
+  <text x="400" y="55" fill="#FFFFFF" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">4 ขั้นตอนไดคัทเส้นผมให้เนียนกริบ (Refine Edge)</text>
+  
+  <!-- Step 1 -->
+  <rect x="50" y="100" width="160" height="280" rx="10" fill="#27272A" stroke="#3F3F46" stroke-width="2"/>
+  <circle cx="130" cy="150" r="30" fill="#6366F1"/>
+  <text x="130" y="157" fill="#FFFFFF" font-size="22" font-weight="bold" text-anchor="middle" font-family="sans-serif">1</text>
+  <text x="130" y="210" fill="#FFFFFF" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">เลือกคร่าวๆ</text>
+  <text x="130" y="240" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">ใช้ Quick Selection</text>
+  <text x="130" y="265" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">หรือ Lasso Tool</text>
+  <text x="130" y="290" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">เลือกตัวแบบหลัก</text>
+
+  <!-- Step 2 -->
+  <rect x="230" y="100" width="160" height="280" rx="10" fill="#27272A" stroke="#3F3F46" stroke-width="2"/>
+  <circle cx="310" cy="150" r="30" fill="#EC4899"/>
+  <text x="310" y="157" fill="#FFFFFF" font-size="22" font-weight="bold" text-anchor="middle" font-family="sans-serif">2</text>
+  <text x="310" y="210" fill="#FFFFFF" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">เข้าสู่โหมดปรับขอบ</text>
+  <text x="310" y="240" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">กดปุ่ม</text>
+  <text x="310" y="265" fill="#F472B6" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">"Select and Mask"</text>
+  <text x="310" y="290" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">หรือ Refine Edge</text>
+
+  <!-- Step 3 -->
+  <rect x="410" y="100" width="160" height="280" rx="10" fill="#27272A" stroke="#3F3F46" stroke-width="2"/>
+  <circle cx="490" cy="150" r="30" fill="#F59E0B"/>
+  <text x="490" y="157" fill="#FFFFFF" font-size="22" font-weight="bold" text-anchor="middle" font-family="sans-serif">3</text>
+  <text x="490" y="210" fill="#FFFFFF" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">ระบายเก็บไรผม</text>
+  <text x="490" y="240" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">ใช้แปรง</text>
+  <text x="490" y="265" fill="#FCD34D" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">Refine Radius Tool</text>
+  <text x="490" y="290" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">ระบายตามเส้นผม</text>
+
+  <!-- Step 4 -->
+  <rect x="590" y="100" width="160" height="280" rx="10" fill="#27272A" stroke="#3F3F46" stroke-width="2"/>
+  <circle cx="670" cy="150" r="30" fill="#10B981"/>
+  <text x="670" y="157" fill="#FFFFFF" font-size="22" font-weight="bold" text-anchor="middle" font-family="sans-serif">4</text>
+  <text x="670" y="210" fill="#FFFFFF" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">ตัดขอบสีเดิม</text>
+  <text x="670" y="240" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">ติ๊กเลือก</text>
+  <text x="670" y="265" fill="#6EE7B7" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">Decontaminate</text>
+  <text x="670" y="290" fill="#A1A1AA" font-size="13" text-anchor="middle" font-family="sans-serif">ส่งออกเป็น Layer Mask</text>
+</svg>
+`);
+
+// -------------------------------------------------------------
+// คลังคอนเทนต์ Digital Art ที่รูปภาพตรงกับเนื้อหา 100%
+// -------------------------------------------------------------
 const DIGITAL_ART_CATALOG = [
   {
     type: 'inspiration',
     title: '🎨 ทฤษฎีสี 60-30-10: เคล็ดลับคุมโทนให้งาน Digital Art ดูโปร',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🎨',
-    text: 'การใช้สีในงานศิลปะดิจิทัลให้ลงตัว ลองใช้สูตร 60-30-10:\n• 60% สีหลัก (Dominant Color) เช่น สีพื้นหลังหรือบรรยากาศโดยรวม\n• 30% สีรอง (Secondary Color) เช่น ตัวละครหรือองค์ประกอบหลัก\n• 10% สีไฮไลต์ (Accent Color) สีที่ตัดกันเพื่อดึงดูดสายตาไปยังจุดเด่น (Focal Point)\n\nลองนำไปปรับใช้กับการลงสีภาพใน Photoshop หรือ Procreate ดูนะครับ!',
-    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000&auto=format&fit=crop&q=80',
+    text: 'การใช้สีในงานศิลปะดิจิทัลให้ลงตัว ลองใช้สูตร 60-30-10:\n• 60% สีหลัก (Dominant Color) เช่น สีพื้นหลังหรือบรรยากาศโดยรวม\n• 30% สีรอง (Secondary Color) เช่น ตัวละครหรือองค์ประกอบหลัก\n• 10% สีไฮไลต์ (Accent Color) สีที่ตัดกันเพื่อดึงดูดสายตาไปยังจุดเด่น (Focal Point)\n\nลองสังเกตแผนภาพอินโฟกราฟิกด้านล่างเพื่อนำไปปรับใช้กับการลงสีภาพใน Photoshop หรือ Photopea ดูนะครับ!',
+    image: SVG_COLOR_60_30_10,
     videoUrl: null
   },
   {
@@ -23,8 +288,8 @@ const DIGITAL_ART_CATALOG = [
     title: '💡 3 Blending Modes ใน Photoshop ที่สายกราฟิกต้องใช้เป็นประจำ',
     author: 'AI Art Curator 🤖',
     authorAvatar: '💡',
-    text: 'โหมดผสมเลเยอร์ (Layer Blending Modes) ที่ช่วยให้งานอาร์ตดูมีมิติ:\n1. Multiply: เหมาะสำหรับลงเงามืด (Shadows) และคัดลอกเส้นหมึก\n2. Screen: เหมาะสำหรับเอฟเฟกต์แสง ฟุ้งประกาย (Glow & Highlights)\n3. Overlay / Soft Light: เพิ่มมิติความเปรียบต่างของแสงเงาและปรับโทนสีโดยรวมให้กลมกลืน\n\n📌 ทดลองฝึก: สร้างเลเยอร์ใหม่ วาดแสงสีส้ม แล้วเปลี่ยนโหมดเป็น Screen ดูความแตกต่าง!',
-    image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1000&auto=format&fit=crop&q=80',
+    text: 'โหมดผสมเลเยอร์ (Layer Blending Modes) สำคัญ 3 กลุ่มที่ต้องใช้งานบ่อยที่สุด:\n1. Multiply (Darken): ตัดสีขาวออก เหมาะสำหรับลงเงามืดและคัดลอกเส้นหมึก\n2. Screen (Lighten): ตัดสีดำออก เหมาะสำหรับสร้างเอฟเฟกต์แสง แสงนีออน และประกายไฟ\n3. Overlay (Contrast): เพิ่มมิติความเปรียบต่างของแสงเงาและเคลือบ Texture ให้กลมกลืน\n\n📌 ดูสรุปการทำงานในแต่ละโหมดจากอินโฟกราฟิกด้านล่างได้เลยครับ!',
+    image: SVG_BLENDING_MODES,
     videoUrl: null
   },
   {
@@ -41,8 +306,8 @@ const DIGITAL_ART_CATALOG = [
     title: '🌟 เทคนิค Rim Light: สร้างแสงขอบให้ตัวละครลอยเด่นจากฉากหลัง',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🌟',
-    text: 'Rim Light หรือ Kicker Light คือแสงที่ส่องมาจากด้านหลังของตัวแบบ (Backlight) ทำให้เกิดเส้นขอบสว่างรอบตัวละคร\n\n✨ ประโยชน์:\n• แยกตัวละครออกจากพื้นหลังที่มืด\n• เพิ่มความเท่ สไตล์ภาพยนตร์ไซไฟ/แฟนตาซี\n• วิธีทำง่ายๆ ใน Photopea/Photoshop: ใช้เลเยอร์โหมด Color Dodge หรือ Linear Dodge วาดขอบแสงบางๆ',
-    image: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1000&auto=format&fit=crop&q=80',
+    text: 'Rim Light หรือ Kicker Light คือแสงที่ส่องมาจากด้านหลังของตัวแบบ (Backlight) ทำให้เกิดเส้นขอบสว่างรอบตัวละคร\n\n✨ ประโยชน์:\n• แยกตัวละครออกจากพื้นหลังที่มืด\n• เพิ่มความเท่ สไตล์ภาพยนตร์ไซไฟ/แฟนตาซี\n• วิธีทำง่ายๆ ใน Photopea/Photoshop: ใช้เลเยอร์โหมด Color Dodge หรือ Linear Dodge วาดขอบแสงตามทิศทางของแหล่งกำเนิดแสงด้านหลัง',
+    image: SVG_RIM_LIGHT,
     videoUrl: null
   },
   {
@@ -50,17 +315,8 @@ const DIGITAL_ART_CATALOG = [
     title: '🤖 Prompt Engineering: สูตรสั่ง AI สร้างภาพแนว Cyberpunk & Concept Art',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🤖',
-    text: 'แจก Prompt โครงสร้างสำหรับสาย Concept Art:\n\n💬 "Futuristic cyberpunk temple in neo-bangkok, glowing neon lights, holographic art, dramatic rim lighting, cinematic 8k, unreal engine 5 render, concept art by syd mead"\n\n🔑 คำสำคัญที่ช่วยดึงคุณภาพ: cinematic lighting, depth of field, 8k octane render, atmospheric haze',
-    image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1000&auto=format&fit=crop&q=80',
-    videoUrl: null
-  },
-  {
-    type: 'example',
-    title: '🖼️ Showcase: Matte Painting & Environment Art ที่น่าทึ่ง',
-    author: 'AI Art Curator 🤖',
-    authorAvatar: '🖼️',
-    text: 'Matte Painting คือการผสมผสานภาพถ่ายหลายๆ ภาพ (Photo Bashing) เข้ากับการวาดแบบ Digital Painting เพื่อสร้างฉากทัศน์เสมือนจริงที่ไม่มีอยู่จริง เช่น เมืองลอยฟ้า หรือวิหารโบราณในป่าลึก\n\n🔍 ข้อสังเกต: การควบคุม Atmospheric Perspective (ระยะความชัดลึกและความจางของหมอกในระยะไกล) ช่วยให้ภาพดูกว้างใหญ่สมจริงมากยิ่งขึ้น',
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1000&auto=format&fit=crop&q=80',
+    text: 'แจกสูตรโครงสร้าง 4 ส่วนในการสั่ง AI สร้างภาพศิลปะแนว Concept Art:\n1. Subject (ประธานของภาพ): กำหนดสิ่งของ/สถานที่หลัก\n2. Art Style (สไตล์ศิลปะ): เช่น Concept Art, Matte Painting\n3. Lighting (การจัดแสง): เช่น Dramatic Rim Lighting, Glowing Neon\n4. Engine / Quality: เช่น Unreal Engine 5, 8k Octane Render\n\n💬 ดูตัวอย่างการประกอบ Prompt ในภาพด้านล่างเพื่อนำไปปรับใช้ใน Midjourney หรือ Adobe Firefly ได้ทันที!',
+    image: SVG_AI_PROMPT_FORMULA,
     videoUrl: null
   },
   {
@@ -68,8 +324,8 @@ const DIGITAL_ART_CATALOG = [
     title: '📐 Rule of Thirds (กฎสามส่วน) ในการจัดองค์ประกอบภาพศิลปะ',
     author: 'AI Art Curator 🤖',
     authorAvatar: '📐',
-    text: 'อย่าเพิ่งวางจุดสนใจไว้ตรงกลางเสมอไป! ลองแบ่งพื้นที่ภาพเป็นตาราง 3x3 แล้ววางตำแหน่งตัวละครหรือดวงตาไว้ที่ "จุดตัดเก้าช่อง"\n\nข้อดี:\n• ทำให้ภาพดูมีชีวิตชีวาและมีการเคลื่อนไหว (Dynamic)\n• มีพื้นที่ว่าง (Negative Space) ให้นำสายตาและสร้างเรื่องราว',
-    image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1000&auto=format&fit=crop&q=80',
+    text: 'อย่าเพิ่งวางจุดสนใจไว้ตรงกลางเสมอไป! ลองแบ่งพื้นที่ภาพเป็นตาราง 3x3 แล้ววางตำแหน่งตัวละคร จุดสนใจ หรือดวงตาไว้ที่ "จุดตัดเก้าช่อง" (จุดสีแดงตามแผนผัง)\n\nข้อดี:\n• ทำให้ภาพดูมีชีวิตชีวาและมีการเคลื่อนไหว (Dynamic)\n• มีพื้นที่ว่าง (Negative Space) ให้นำสายตาและสร้างเรื่องราวได้อย่างสมดุล',
+    image: SVG_RULE_OF_THIRDS,
     videoUrl: null
   },
   {
@@ -77,17 +333,17 @@ const DIGITAL_ART_CATALOG = [
     title: '🎨 Color Palette ประจำวัน: Neon Noir Aesthetic',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🎨',
-    text: 'ชุดคู่สีแนะนำสำหรับงานอาร์ตแนว Cyberpunk และ Sci-Fi:\n• 🟣 Cyber Magenta (#FF007F)\n• 🔵 Deep Cyan (#00F0FF)\n• 🟡 Electric Amber (#FFDE59)\n• ⚫ Dark Charcoal Background (#121214)\n\nลองนำรหัสโค้ดสีเหล่านี้ไปสร้าง Color Swatches ในโปรแกรมวาดภาพดูนะครับ!',
-    image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1000&auto=format&fit=crop&q=80',
+    text: 'ชุดคู่สีแนะนำสำหรับงานอาร์ตแนว Cyberpunk และ Sci-Fi:\n• 🟣 Cyber Magenta (#FF007F)\n• 🔵 Deep Cyan (#00F0FF)\n• 🟡 Electric Amber (#FFDE59)\n• ⚫ Charcoal Background (#121214)\n\nสามารถคัดลอกรหัสโค้ดสี Hex Code ในภาพไปใช้สร้าง Palette สีในโปรแกรมออกแบบได้ทันทีครับ!',
+    image: SVG_PALETTE_NEON_NOIR,
     videoUrl: null
   },
   {
     type: 'tutorial',
-    title: '🖌️ เทคนิคการไดคัทเส้นผมและขนสัตว์ใน Photopea / Photoshop',
+    title: '🖌️ 4 ขั้นตอนไดคัทเส้นผมและขนสัตว์ใน Photopea / Photoshop',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🖌️',
-    text: 'ไดคัทเส้นผมให้เนียนแบบไม่แหว่ง:\n1. ใช้ Quick Selection Tool เลือกตัวแบบคร่าวๆ\n2. กดปุ่ม "Select and Mask" หรือ "Refine Edge"\n3. ใช้แปรง Refine Radius Tool ระบายบริเวณไรผม\n4. เลือก Output เป็น "New Layer with Layer Mask" และติ๊ก "Decontaminate Colors" เพื่อลบขอบสีพื้นหลังเดิมออก',
-    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&auto=format&fit=crop&q=80',
+    text: 'ไดคัทเส้นผมให้เนียนแบบไม่แหว่ง:\n1. Quick Selection: เลือกตัวแบบคร่าวๆ\n2. Select and Mask / Refine Edge: เข้าสู่โหมดปรับแต่งขอบ\n3. Refine Radius Tool: ใช้แปรงระบายเก็บไรผมทีละนิด\n4. Decontaminate Colors: ติ๊กลบขอบสีเดิมและส่งออกเป็น Layer Mask\n\n📌 ดูขั้นตอนสรุปพร้อมใช้งานจากภาพอินโฟกราฟิกด้านล่างได้เลยครับ!',
+    image: SVG_HAIR_CUTOUT,
     videoUrl: null
   }
 ];
