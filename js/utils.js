@@ -23,19 +23,23 @@ function fmtDateShort(iso){
 }
 
 /**
- * แปลง URL ในข้อความให้เป็น Hyperlink ที่คลิกเปิดแท็บใหม่ได้
+ * แปลง URL ในข้อความให้เป็น Hyperlink ที่คลิกเปิดแท็บใหม่ได้ ปลอดภัยและตัดวรรคตอนท้ายลิงก์อัตโนมัติ
  */
 function linkify(text) {
   if (!text) return '';
   const escaped = esc(text);
-  const urlRegex = /((https?:\/\/|www\.)[^\s<]+|(?:\b[a-zA-Z0-9-]+\.)+(?:com|org|net|io|co|th|app|dev|edu|gov|me|site|online|store|tech|art|design|ai)(?:\/[^\s<]*)?)/gi;
+  const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+|[a-zA-Z0-9-]+\.(?:com|org|net|io|co|th|app|dev|edu|gov|me|site|online|store|tech|art|design|ai)(?:\/[^\s<]*)?)/gi;
 
   return escaped.replace(urlRegex, (match) => {
-    let href = match;
+    // แยกเครื่องหมายวรรคตอนท้าย URL ออก เช่น จุด วงเล็บ หรือจุลภาค
+    const cleanUrl = match.replace(/[.,;:!?()\]]+$/, '');
+    const trailing = match.slice(cleanUrl.length);
+
+    let href = cleanUrl;
     if (!href.match(/^https?:\/\//i)) {
       href = 'https://' + href;
     }
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="post-link" onclick="event.stopPropagation()">${match}</a>`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="post-link" onclick="event.stopPropagation()">${cleanUrl}</a>${trailing}`;
   });
 }
 

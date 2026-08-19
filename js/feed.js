@@ -136,7 +136,7 @@ function postCard(p){
   const me = currentIdentity();
   const liked = me && p.likes && p.likes.includes(me);
   
-  const img = p.image ? '<div class="post-media"><img src="'+esc(p.image)+'" alt="'+esc(p.title)+'" style="cursor:pointer" onclick="openLightbox(\''+esc(p.image)+'\',\''+esc(p.title)+'\')"></div>' : '';
+  const img = p.image ? '<div class="post-media"><img src="'+esc(p.image)+'" alt="'+esc(p.title)+'" style="cursor:pointer" onclick="openLightbox(this.src, \''+esc(p.title)+'\')"></div>' : '';
   let media = img;
   const embed = p.videoUrl ? ytEmbed(p.videoUrl) : null;
   if(embed) media += '<div class="post-media"><div class="video-frame"><iframe src="'+esc(embed)+'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div></div>';
