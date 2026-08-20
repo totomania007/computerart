@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Classwork Hub — curator.js
    ระบบ AI Art Curator: คอนเทนต์ศิลปะดิจิทัลพร้อมภาพประกอบ อินโฟกราฟิก ลิงก์ศึกษาต่อ และแหล่งอ้างอิงเครดิต
    - วันที่ 1 โพสต์
@@ -270,6 +270,52 @@ const SVG_HAIR_CUTOUT = makeSvgDataUrl(`
 </svg>
 `);
 
+// 8. Infographic: Concept Art & Cinematic Lighting Workflow
+const SVG_CONCEPT_ART_WORKFLOW = makeSvgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <rect width="800" height="450" fill="#0C0A09"/>
+  <text x="400" y="52" fill="#FFFFFF" font-size="24" font-weight="bold" text-anchor="middle" font-family="sans-serif">4 ขั้นตอนการสร้าง Concept Art &amp; Cinematic Lighting</text>
+  
+  <!-- Step 1 -->
+  <rect x="50" y="95" width="160" height="290" rx="10" fill="#1C1917" stroke="#44403C" stroke-width="2"/>
+  <rect x="65" y="110" width="130" height="85" rx="6" fill="#292524"/>
+  <path d="M 75 175 L 105 140 L 130 160 L 160 130 L 185 175 Z" fill="#78716C"/>
+  <text x="130" y="225" fill="#38BDF8" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">1. Value Sketch</text>
+  <text x="130" y="255" fill="#E7E5E4" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">ร่างโครงขาว-ดำ</text>
+  <text x="130" y="285" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• คุมน้ำหนักสว่าง-มืด</text>
+  <text x="130" y="310" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• กำหนดจุดเด่นหลัก</text>
+
+  <!-- Step 2 -->
+  <rect x="230" y="95" width="160" height="290" rx="10" fill="#1C1917" stroke="#44403C" stroke-width="2"/>
+  <rect x="245" y="110" width="130" height="85" rx="6" fill="#451A03"/>
+  <path d="M 255 175 L 285 140 L 310 160 L 340 130 L 365 175 Z" fill="#EA580C"/>
+  <text x="310" y="225" fill="#FB923C" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">2. Color Key</text>
+  <text x="310" y="255" fill="#E7E5E4" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">ลงสีบรรยากาศ</text>
+  <text x="310" y="285" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• กำหนด Mood โทนสี</text>
+  <text x="310" y="310" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• Warm vs Cool Light</text>
+
+  <!-- Step 3 -->
+  <rect x="410" y="95" width="160" height="290" rx="10" fill="#1C1917" stroke="#44403C" stroke-width="2"/>
+  <rect x="425" y="110" width="130" height="85" rx="6" fill="#1E1B4B"/>
+  <line x1="435" y1="120" x2="545" y2="185" stroke="#FDE047" stroke-width="3" opacity="0.6"/>
+  <path d="M 435 175 L 465 140 L 490 160 L 520 130 L 545 175 Z" fill="#6366F1"/>
+  <text x="490" y="225" fill="#FACC15" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">3. Light &amp; Fog</text>
+  <text x="490" y="255" fill="#E7E5E4" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">แสงหมอกบรรยากาศ</text>
+  <text x="490" y="285" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• ใส่ลำแสง God Rays</text>
+  <text x="490" y="310" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• สร้างมิติระยะลึก</text>
+
+  <!-- Step 4 -->
+  <rect x="590" y="95" width="160" height="290" rx="10" fill="#1C1917" stroke="#44403C" stroke-width="2"/>
+  <rect x="605" y="110" width="130" height="85" rx="6" fill="#064E3B"/>
+  <circle cx="670" cy="140" r="15" fill="#34D399"/>
+  <path d="M 615 175 L 645 140 L 670 160 L 700 130 L 725 175 Z" fill="#059669"/>
+  <text x="670" y="225" fill="#4ADE80" font-size="16" font-weight="bold" text-anchor="middle" font-family="sans-serif">4. Detailing</text>
+  <text x="670" y="255" fill="#E7E5E4" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">เก็บรายละเอียด</text>
+  <text x="670" y="285" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• ใช้ Texture Brush</text>
+  <text x="670" y="310" fill="#A8A29E" font-size="12" text-anchor="middle" font-family="sans-serif">• ไฮไลต์แสงตกกระทบ</text>
+</svg>
+`);
+
 // -------------------------------------------------------------
 // คลังคอนเทนต์ Digital Art พร้อมลิงก์ศึกษาต่อ และ แหล่งอ้างอิง/เครดิต
 // -------------------------------------------------------------
@@ -293,13 +339,13 @@ const DIGITAL_ART_CATALOG = [
     videoUrl: null
   },
   {
-    type: 'video',
-    title: '🎬 Speed Painting & Concept Art: เทคนิคการจัดแสงบรรยากาศ',
+    type: 'inspiration',
+    title: '🎬 Concept Art & Cinematic Lighting: 4 ขั้นตอนสร้างงานจัดแสงบรรยากาศ',
     author: 'AI Art Curator 🤖',
     authorAvatar: '🎬',
-    text: 'ชมขั้นตอนการสร้างงาน Concept Art ตั้งแต่ร่างภาพขาวดำ (Thumbnail Sketch) ไปจนถึงการลงสีและจัดแสงแบบ Cinematic Lighting สังเกตการใช้แปรง Texture Brush เพื่อสร้างความสมจริงของพื้นผิว\n\n🔗 แหล่งเรียนรู้ Concept Art เพิ่มเติม: https://www.artstation.com/learning\n📚 แหล่งอ้างอิง & เครดิต: Feng Zhu Design (FZD School) & Concept Art World',
-    image: null,
-    videoUrl: 'https://www.youtube.com/watch?v=rgVPGPHyHbc'
+    text: 'ขั้นตอนการสร้างงาน Concept Art ให้มีมิติแสงเงาแบบภาพยนตร์ (Cinematic Lighting):\n1. Thumbnail Value Sketch: ร่างโครงสร้างขาว-ดำ กำหนดค่าความสว่างมืด\n2. Color Key & Mood: ลงสีบรรยากาศหลัก กำหนดอุณหภูมิสี (Warm vs Cool Light)\n3. Light & Volumetric Fog: ใส่ลำแสงส่องผ่าน (God Rays) และหมอกควันเพื่อสร้างระยะลึก\n4. Detailing & Texture: ใช้ Texture Brush เก็บรายละเอียดและแสงสะท้อน\n\n📌 ศึกษาขั้นตอนการทำงานจากอินโฟกราฟิกด้านล่างได้เลยครับ!\n\n🔗 แหล่งเรียนรู้ Concept Art เพิ่มเติม: https://www.artstation.com/learning\n📚 แหล่งอ้างอิง & เครดิต: Feng Zhu Design (FZD School) & Concept Art World',
+    image: SVG_CONCEPT_ART_WORKFLOW,
+    videoUrl: null
   },
   {
     type: 'inspiration',
